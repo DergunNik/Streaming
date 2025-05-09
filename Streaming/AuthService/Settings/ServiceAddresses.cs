@@ -1,6 +1,4 @@
-﻿using Email;
-
-namespace AuthService.Settings;
+﻿namespace AuthService.Settings;
 
 public class ServiceAddresses
 {

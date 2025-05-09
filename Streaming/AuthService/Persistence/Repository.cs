@@ -1,7 +1,5 @@
 ﻿using System.Linq.Expressions;
-using AuthService.Domain.Interfaces;
-using AuthService.Domain.Models;
-using AuthService.Persistence;
+using AuthService.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Persistence;
@@ -22,7 +20,8 @@ public class EfRepository<T>(AppDbContext context) : IRepository<T> where T : En
         return Task.CompletedTask;
     }
 
-    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> filter, CancellationToken cancellationToken = default)
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> filter,
+        CancellationToken cancellationToken = default)
     {
         return await _entities.Where(filter).FirstOrDefaultAsync(cancellationToken);
     }
@@ -50,12 +49,9 @@ public class EfRepository<T>(AppDbContext context) : IRepository<T> where T : En
         var query = _entities.AsQueryable();
         query = includesProperties?.Aggregate(query, (current, include) => current.Include(include)) ?? query;
 
-        if (filter is not null)
-        {
-            query = query.Where(filter);
-        }
+        if (filter is not null) query = query.Where(filter);
 
-        return await query.ToListAsync(cancellationToken: cancellationToken);
+        return await query.ToListAsync(cancellationToken);
     }
 
     public Task UpdateAsync(T entity, CancellationToken cancellationToken = default)

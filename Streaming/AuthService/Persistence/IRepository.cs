@@ -1,8 +1,6 @@
 ﻿using System.Linq.Expressions;
-using AuthService.Domain.Models;
-using AuthService.Persistence;
 
-namespace AuthService.Domain.Interfaces;
+namespace AuthService.Persistence;
 
 public interface IRepository<T>
 {

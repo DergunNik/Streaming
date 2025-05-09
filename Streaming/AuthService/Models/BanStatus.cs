@@ -1,4 +1,4 @@
-﻿namespace AuthService.Domain.Models;
+﻿namespace AuthService.Models;
 
 public enum BanStatus : byte
 {

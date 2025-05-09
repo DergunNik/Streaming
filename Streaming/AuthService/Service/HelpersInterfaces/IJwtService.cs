@@ -1,4 +1,4 @@
-﻿namespace AuthService.Domain.Interfaces;
+﻿namespace AuthService.Service.HelpersInterfaces;
 
 public interface IJwtService
 {

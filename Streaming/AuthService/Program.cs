@@ -1,6 +1,6 @@
-using AuthService.Domain.Interfaces;
 using AuthService.Persistence;
-using AuthService.Services;
+using AuthService.Service.HelpersImplementations;
+using AuthService.Service.HelpersInterfaces;
 using AuthService.Settings;
 using Newtonsoft.Json;
 
@@ -15,13 +15,13 @@ builder.Services
     .AddScoped<IJwtService, JwtService>()
     .AddScoped<AppDbContext>()
     .AddScoped(typeof(IRepository<>), typeof(EfRepository<>))
-    .AddScoped<AuthService.Services.AuthService>()
+    .AddScoped<AuthService.Service.AuthService>()
     .AddScoped<IHashService, Argon2HashService>()
     .AddScoped<AuthCredentials>(_ => JsonConvert.DeserializeObject<AuthCredentials>(
         File.ReadAllText("credentials.json")));
 
 var app = builder.Build();
 
-app.MapGrpcService<AuthService.Services.AuthService>();
+app.MapGrpcService<AuthService.Service.AuthService>();
 
 app.Run();

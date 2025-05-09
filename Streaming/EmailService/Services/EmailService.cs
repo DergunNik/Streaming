@@ -15,7 +15,7 @@ public class EmailService(
 {
     public override async Task<Empty> SendEmail(EmailRequest request, ServerCallContext context)
     {
-        if (!MailAddress.TryCreate(request.To, out var _))
+        if (!MailAddress.TryCreate(request.To, out _))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid email address."));
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(request.From, credentials.Email));

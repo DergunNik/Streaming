@@ -2,7 +2,7 @@
 
 public class AuthSettings
 {
-    public TimeSpan AccessTokenLifetime  { get; set; }
+    public TimeSpan AccessTokenLifetime { get; set; }
     public TimeSpan RefreshTokenLifetime { get; set; }
     public int EmailSize { get; set; }
     public int PasswordSize { get; set; }
