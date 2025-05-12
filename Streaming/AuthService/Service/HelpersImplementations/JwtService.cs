@@ -19,7 +19,7 @@ public class JwtService(
     IRepository<User> userRepository,
     IRepository<RefreshToken> refreshTokenRepository,
     IHashService hashService,
-    AuthCredentials credentials
+    JwtSettings credentials
 ) : IJwtService
 {
     public async Task<(string jwtToken, string refreshToken)> GenerateTokenAsync(string email, string password)
@@ -50,7 +50,7 @@ public class JwtService(
         var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(credentials.SecretKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(credentials.Key)),
             ValidateIssuer = false,
             ValidateAudience = false
         };
@@ -131,7 +131,7 @@ public class JwtService(
             signingCredentials:
             new SigningCredentials(
                 new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(credentials.SecretKey)),
+                    Encoding.UTF8.GetBytes(credentials.Key)),
                 SecurityAlgorithms.HmacSha256));
 
         return new JwtSecurityTokenHandler().WriteToken(jwtToken);

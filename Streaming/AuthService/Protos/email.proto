@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
-option csharp_namespace = "Email";
+option csharp_namespace = "EmailClientApp";
 
 package email;
 
@@ -12,7 +12,7 @@ service EmailService {
 
 message EmailRequest {
   string from = 1;
-  string to = 2;
+  repeated string to = 2;
   string subject = 3;
   string body = 4;
 }

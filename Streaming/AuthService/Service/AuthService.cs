@@ -3,39 +3,59 @@ using System.Net.Mail;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using Auth;
+using AuthServerApp;
 using AuthService.Models;
 using AuthService.Persistence;
 using AuthService.Service.HelpersImplementations;
 using AuthService.Service.HelpersInterfaces;
 using AuthService.Settings;
-using Email;
+using EmailClientApp;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Net.Client;
 using Microsoft.Extensions.Options;
 
 namespace AuthService.Service;
 
-public class AuthService(
-    ILogger<JwtService> logger,
-    IHashService hashService,
-    IRepository<User> usersRepository,
-    IRepository<UserRegRequest> requestsRepository,
-    IRepository<RefreshToken> refreshTokensRepository,
-    IJwtService jwtService,
-    IOptions<AuthSettings> authOptions,
-    IOptions<EncryptionSettings> encryptionOptions,
-    AppDbContext appDbContext,
-    ServiceAddresses addresses
-) : Auth.AuthService.AuthServiceBase
+public class AuthService : AuthServerApp.AuthService.AuthServiceBase
 {
+    private readonly ILogger<JwtService> _logger;
+    private readonly IHashService _hashService;
+    private readonly IRepository<User> _usersRepository;
+    private readonly IRepository<UserRegRequest> _requestsRepository;
+    private readonly IRepository<RefreshToken> _refreshTokensRepository;
+    private readonly IJwtService _jwtService;
+    private readonly IOptions<AuthSettings> _authOptions;
+    private readonly IOptions<EncryptionSettings> _encryptionOptions;
+    private readonly EmailService.EmailServiceClient _emailServiceClient;
+
+    public AuthService(
+        ILogger<JwtService> logger,
+        IHashService hashService,
+        IRepository<User> usersRepository,
+        IRepository<UserRegRequest> requestsRepository,
+        IRepository<RefreshToken> refreshTokensRepository,
+        IJwtService jwtService,
+        IOptions<AuthSettings> authOptions,
+        IOptions<EncryptionSettings> encryptionOptions,
+        EmailService.EmailServiceClient emailServiceClient)
+    {
+        _logger = logger;
+        _hashService = hashService;
+        _usersRepository = usersRepository;
+        _requestsRepository = requestsRepository;
+        _refreshTokensRepository = refreshTokensRepository;
+        _jwtService = jwtService;
+        _authOptions = authOptions;
+        _encryptionOptions = encryptionOptions;
+        _emailServiceClient = emailServiceClient;
+    }
+    
     public override async Task<LoginReply> Login(LoginRequest request, ServerCallContext context)
     {
         try
         {
             var (jwtToken, refreshToken) =
-                await jwtService.GenerateTokenAsync(request.Email, request.Password);
+                await _jwtService.GenerateTokenAsync(request.Email, request.Password);
             return ConstructReply(jwtToken, refreshToken);
         }
         catch (AuthenticationException ex)
@@ -48,7 +68,7 @@ public class AuthService(
         }
         catch (Exception ex)
         {
-            logger.LogCritical("Inner exception in Login: {ex}", ex.Message);
+            _logger.LogCritical("Inner exception in Login: {ex}", ex.Message);
             throw new RpcException(new Status(StatusCode.Internal, "No info"));
         }
     }
@@ -56,20 +76,20 @@ public class AuthService(
     public override async Task<Empty> BeginRegistration(RegisterRequest request, ServerCallContext context)
     {
         if (string.IsNullOrEmpty(request.Email) ||
-            request.Password.Length < authOptions.Value.MinPasswordSize ||
-            request.Password.Length > authOptions.Value.PasswordSize ||
-            request.Email.Length > authOptions.Value.EmailSize)
+            request.Password.Length < _authOptions.Value.MinPasswordSize ||
+            request.Password.Length > _authOptions.Value.PasswordSize ||
+            request.Email.Length > _authOptions.Value.EmailSize)
             throw new RpcException(
                 new Status(
                     StatusCode.InvalidArgument,
-                    $"Password should be from {authOptions.Value.MinPasswordSize} to {authOptions.Value.PasswordSize} characters. " +
-                    $"Email can't be empty and should be less than {authOptions.Value.EmailSize}."));
+                    $"Password should be from {_authOptions.Value.MinPasswordSize} to {_authOptions.Value.PasswordSize} characters. " +
+                    $"Email can't be empty and should be less than {_authOptions.Value.EmailSize}."));
 
         if (!MailAddress.TryCreate(request.Email, out _))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid email."));
 
-        var codeBytes = new byte[authOptions.Value.RegistrationCodeSize];
-        var saltBytes = new byte[encryptionOptions.Value.SaltSize];
+        var codeBytes = new byte[_authOptions.Value.RegistrationCodeSize];
+        var saltBytes = new byte[_encryptionOptions.Value.SaltSize];
         using (var rng = RandomNumberGenerator.Create())
         {
             rng.GetBytes(codeBytes);
@@ -78,29 +98,28 @@ public class AuthService(
 
         var code = Convert.ToBase64String(codeBytes);
         var salt = Convert.ToBase64String(saltBytes);
-        var passwordHash = await hashService.HashAsync(request.Password, salt);
+        var passwordHash = await _hashService.HashAsync(request.Password, salt);
 
         var userRegRequest = new UserRegRequest
         {
             Email = request.Email,
             PasswordHash = passwordHash,
             RegistrationCode = code,
-            ActiveUntil = DateTime.UtcNow.AddMinutes(authOptions.Value.RegistrationCodeLifetimeMinutes)
+            ActiveUntil = DateTime.UtcNow.AddMinutes(_authOptions.Value.RegistrationCodeLifetimeMinutes)
         };
-
-        await requestsRepository.AddAsync(userRegRequest, context.CancellationToken);
-        await usersRepository.SaveChangesAsync(context.CancellationToken);
-
-        var channel = GrpcChannel.ForAddress(addresses.EmailService);
-        var client = new EmailService.EmailServiceClient(channel);
-        await client.SendEmailAsync(new EmailRequest
+    
+        await _requestsRepository.AddAsync(userRegRequest, context.CancellationToken);
+        await _usersRepository.SaveChangesAsync(context.CancellationToken);
+        
+        await _emailServiceClient.SendEmailAsync(new EmailRequest
         {
             From = "Registration",
-            To = request.Email,
+            To = { request.Email },
             Subject = "Registration code",
             Body = $"Your registration code: {code}"
-        });
-
+        },
+        cancellationToken: context.CancellationToken);
+        
         return new Empty();
     }
 
@@ -109,7 +128,7 @@ public class AuthService(
         if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Code))
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Email and code are required."));
 
-        var regRequest = await requestsRepository.FirstOrDefaultAsync(
+        var regRequest = await _requestsRepository.FirstOrDefaultAsync(
                              x => x.Email == request.Email && x.ActiveUntil > DateTime.UtcNow,
                              context.CancellationToken)
                          ?? throw new RpcException(new Status(StatusCode.NotFound,
@@ -118,7 +137,7 @@ public class AuthService(
         if (regRequest.RegistrationCode != request.Code)
             throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid registration code."));
 
-        var existingUser = await usersRepository.FirstOrDefaultAsync(
+        var existingUser = await _usersRepository.FirstOrDefaultAsync(
             x => x.Email == request.Email, context.CancellationToken);
 
         if (existingUser is not null)
@@ -130,10 +149,10 @@ public class AuthService(
             PasswordHash = regRequest.PasswordHash
         };
 
-        await usersRepository.AddAsync(user, context.CancellationToken);
-        await requestsRepository.DeleteAsync(regRequest, context.CancellationToken);
-        await usersRepository.SaveChangesAsync(context.CancellationToken);
-        await requestsRepository.SaveChangesAsync(context.CancellationToken);
+        await _usersRepository.AddAsync(user, context.CancellationToken);
+        await _requestsRepository.DeleteAsync(regRequest, context.CancellationToken);
+        await _usersRepository.SaveChangesAsync(context.CancellationToken);
+        await _requestsRepository.SaveChangesAsync(context.CancellationToken);
 
         return new Empty();
     }
@@ -143,7 +162,7 @@ public class AuthService(
         try
         {
             var (jwtToken, refreshToken) =
-                await jwtService.RefreshTokenAsync(request.JwtToken, request.RefreshToken);
+                await _jwtService.RefreshTokenAsync(request.JwtToken, request.RefreshToken);
             return ConstructReply(jwtToken, refreshToken);
         }
         catch (AuthenticationException ex)
@@ -156,47 +175,34 @@ public class AuthService(
         }
         catch (Exception ex)
         {
-            logger.LogCritical("Inner exception in Login: {ex}", ex.Message);
+            _logger.LogCritical("Inner exception in Login: {ex}", ex.Message);
             throw new RpcException(new Status(StatusCode.Internal, "No info"));
         }
     }
-
+    
     public override async Task<Empty> Logout(LogoutRequest request, ServerCallContext context)
     {
-        if (string.IsNullOrEmpty(request.JwtToken))
-            throw new RpcException(new Status(StatusCode.Unauthenticated, "JWT token required"));
+        if (string.IsNullOrEmpty(request.Email))
+            throw new RpcException(new Status(StatusCode.Unauthenticated, "Email required"));
 
-        var tokenHandler = new JwtSecurityTokenHandler();
-        try
-        {
-            var jwtToken = tokenHandler.ReadJwtToken(request.JwtToken);
-            var email = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-            if (string.IsNullOrEmpty(email))
-                throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid token (no email)."));
+        var user = await _usersRepository.FirstOrDefaultAsync(u => u.Email == request.Email, context.CancellationToken)
+                   ?? throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
 
-            var user = await usersRepository.FirstOrDefaultAsync(u => u.Email == email, context.CancellationToken)
-                       ?? throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
+        var tokens = await _refreshTokensRepository
+            .ListAsync(r => r.UserId == user.Id, context.CancellationToken);
 
-            var tokens = await refreshTokensRepository
-                .ListAsync(r => r.UserId == user.Id, context.CancellationToken);
+        foreach (var token in tokens)
+            await _refreshTokensRepository.DeleteAsync(token, context.CancellationToken);
 
-            foreach (var token in tokens)
-                await refreshTokensRepository.DeleteAsync(token, context.CancellationToken);
+        await _refreshTokensRepository.SaveChangesAsync(context.CancellationToken);
 
-            await refreshTokensRepository.SaveChangesAsync(context.CancellationToken);
-
-            return new Empty();
-        }
-        catch (Exception)
-        {
-            throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid JWT token"));
-        }
+        return new Empty();
     }
 
     private LoginReply ConstructReply(string jwtToken, string refreshToken)
     {
-        var expiresJwt = DateTime.UtcNow.Add(authOptions.Value.AccessTokenLifetime);
-        var expiresRefresh = DateTime.UtcNow.Add(authOptions.Value.RefreshTokenLifetime);
+        var expiresJwt = DateTime.UtcNow.Add(_authOptions.Value.AccessTokenLifetime);
+        var expiresRefresh = DateTime.UtcNow.Add(_authOptions.Value.RefreshTokenLifetime);
         return new LoginReply
         {
             JwtToken = jwtToken,

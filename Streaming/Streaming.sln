@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthService", "AuthService\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmailService", "EmailService\EmailService.csproj", "{8D1754AE-D522-4A28-A2EE-50225BAFA07E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "ApiGateway\ApiGateway.csproj", "{0DA6EE0E-F4CB-48D4-BADD-8C33891AAEFA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{8D1754AE-D522-4A28-A2EE-50225BAFA07E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D1754AE-D522-4A28-A2EE-50225BAFA07E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D1754AE-D522-4A28-A2EE-50225BAFA07E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DA6EE0E-F4CB-48D4-BADD-8C33891AAEFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DA6EE0E-F4CB-48D4-BADD-8C33891AAEFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DA6EE0E-F4CB-48D4-BADD-8C33891AAEFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DA6EE0E-F4CB-48D4-BADD-8C33891AAEFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
