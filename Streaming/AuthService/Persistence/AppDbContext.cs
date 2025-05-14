@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace AuthService.Persistence;
 
 public class AppDbContext(
-    IOptions<DbConnectionSettings> dbConnectionOptions,
+    IOptions<DbCredentials> dbCredentials,
     IOptions<EncryptionSettings> encryptionOptions,
     IOptions<AuthSettings> authOptions
 ) : DbContext
@@ -16,7 +16,7 @@ public class AppDbContext(
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        if (!optionsBuilder.IsConfigured) optionsBuilder.UseNpgsql(dbConnectionOptions.Value.DefaultConnection);
+        if (!optionsBuilder.IsConfigured) optionsBuilder.UseNpgsql(dbCredentials.Value.ToConnectionString());
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

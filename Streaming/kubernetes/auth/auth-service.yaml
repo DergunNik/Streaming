@@ -1,0 +1,100 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-svc-deployment
+  labels:
+    app: auth-svc-lbl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-svc-lbl
+  template:
+    metadata:
+      labels:
+        app: auth-svc-lbl
+    spec:
+      containers:
+        - name: auth-svc
+          image: dergunnik/streaming-auth-service:latest
+          ports:
+            - containerPort: 8080
+            - containerPort: 5000
+          env:
+            - name: DbCredentials__User
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-secret
+                  key: pgsql-user
+            - name: DbCredentials__Password
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-secret
+                  key: pgsql-password
+            - name: DbCredentials__Db
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-secret
+                  key: pgsql-db
+            - name: DbCredentials__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-pgsql-config
+                  key: db-url
+            - name: DbCredentials__Port
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-config
+                  key: db-port
+            - name: JwtSettings__Key
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret.yaml
+                  key: jwt-key
+            - name: EmailServiceAddress__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: email-service-config.yaml
+                  key: host
+            - name: EmailServiceAddress__HttpPort
+              valueFrom:
+                configMapKeyRef:
+                  name: email-service-config.yaml
+                  key: http-port
+            - name: EmailServiceAddress__GrpcPort
+              valueFrom:
+                configMapKeyRef:
+                  name: email-service-config.yaml
+                  key: grpc-port
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 5000
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-svc-service
+spec:
+  selector:
+    app: auth-svc-lbl
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: http
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
+      

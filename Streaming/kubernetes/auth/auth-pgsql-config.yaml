@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-pgsql-config
+data:
+  db-url: "auth-pgsql-service"
+  db-port: "5432"
