@@ -400,3 +400,4 @@ FodyWeavers.xsd
 *.sln.iml
 
 **/credentials.json
+**/*-secret.yaml
