@@ -7,7 +7,6 @@ using Grpc.Core;
 using Grpc.Net.Client.Configuration;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,13 +24,6 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 var emailConfig = builder.Configuration.GetSection("EmailServiceAddress").Get<EmailServiceAddress>();
-
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>()
-    .AddUrlGroup(
-        new Uri(emailConfig.GetEmailHttpUrl() + "/health/live"), 
-        name: "EmailService", 
-        tags: ["ready"]);
 
 builder.Services.AddGrpc();
 builder.Services.AddGrpcClient<EmailService.EmailServiceClient>(options =>
@@ -56,6 +48,12 @@ builder.Services
     .AddScoped<AuthService.Service.AuthService>()
     .AddScoped<IHashService, Argon2HashService>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(tags: ["ready"])
+    .AddUrlGroup(
+        new Uri(emailConfig.GetEmailHttpUrl() + "/health/live"), 
+        name: "EmailService", 
+        tags: ["ready"]);
 
 var app = builder.Build();
 

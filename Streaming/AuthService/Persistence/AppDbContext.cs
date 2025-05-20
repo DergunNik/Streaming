@@ -11,8 +11,9 @@ public class AppDbContext(
     IOptions<AuthSettings> authOptions
 ) : DbContext
 {
-    public DbSet<User> Users { get; set; } = null;
-    public DbSet<UserRegRequest> Requests { get; set; } = null;
+    public DbSet<User> Users { get; set; }
+    public DbSet<UserRegRequest> Requests { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

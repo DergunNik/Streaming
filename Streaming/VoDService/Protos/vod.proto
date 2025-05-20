@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+option csharp_namespace = "VoD";
+
+package vod;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+
+service VideoService {
+  rpc UploadVideo(UploadVideoRequest) returns (UploadVideoReply);
+  rpc GetVideoManifest(GetManifestRequest) returns (GetManifestReply);
+  rpc GetVideoUrl(GetUrlRequest) returns (GetUrlReply);
+  rpc GetVideosOfUser(GetVideosOfUserRequest) returns (GetVideosOfUserReply);
+  rpc SetReaction(SetReactionRequest) returns (SetReactionReply);
+  rpc ListVideos(ListVideosRequest) returns (ListVideosReply);
+  rpc DeleteVideo(DeleteVideoRequest) returns (google.protobuf.Empty);
+}
+
+
+message UploadVideoRequest {
+  oneof source {
+    string uri = 1;
+    bytes data = 2;
+  }
+  int32 author_id = 3;
+  string title = 4;
+  string description = 5;
+  repeated string tags = 6;
+}
+
+message UploadVideoReply {
+  string public_id = 1;
+  string secure_url = 2;
+  google.protobuf.Timestamp uploaded_at = 3;
+}
+
+message GetManifestRequest {
+  string public_id = 1;
+  enum ManifestType { HLS = 0; DASH = 1; }
+  ManifestType type = 2;
+}
+
+message GetManifestReply {
+  string manifest_url = 1;
+}
+
+message GetUrlRequest {
+  string public_id = 1;
+  string transformation = 2;
+  string format = 3;
+}
+
+message GetUrlReply {
+  string url = 1;
+}
+
+message VideoInfo {
+  string public_id = 1;
+  int32 likes = 2;
+  int32 dislikes = 3;
+}
+
+message GetVideosOfUserRequest {
+  int32 user_id = 1;
+  int32 page_size  = 2;
+  string page_token = 3;
+}
+
+message GetVideosOfUserReply {
+  repeated VideoInfo videos = 1;
+  string next_cursor = 2;
+}
+
+enum ReactionType {
+  REACTION_UNSPECIFIED = 0;
+  LIKE = 1;
+  DISLIKE = 2;
+}
+
+message SetReactionRequest {
+  ReactionType reaction = 1;
+  int32 user_id = 2;
+  string public_id = 3;
+}
+
+message SetReactionReply {
+  VideoInfo info = 1;
+}
+
+message ListVideosRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  string filter = 3;
+}
+
+message ListVideosReply {
+  repeated VideoInfo videos = 1;
+  string next_cursor = 2;
+}
+
+message DeleteVideoRequest {
+  string public_id = 1;
+}

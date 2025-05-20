@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vod-pgsql-config
+data:
+  db-url: "vod-pgsql-service"
+  db-port: "5432"
