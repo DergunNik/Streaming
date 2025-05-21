@@ -4,8 +4,8 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using VoD;
+using VoDService.Data;
 using VoDService.Models;
-using VoDService.Persistence;
 using VideoInfo = VoD.VideoInfo;
 
 namespace VoDService.Services;
@@ -261,6 +261,16 @@ public class VideoService : VoD.VideoService.VideoServiceBase
         };
 
         await _cloudinary.DestroyAsync(deletionParams);
+        
+        await using var tx = await _dbContext.Database.BeginTransactionAsync();
+        var video = await _dbContext.Videos.FirstOrDefaultAsync(e => e.PublicId == request.PublicId, context.CancellationToken);
+
+        if (video is not null)
+        {
+            _dbContext.Videos.Remove(video);
+            await _dbContext.SaveChangesAsync(context.CancellationToken);
+        }
+        
         return new Empty();
     }
 }

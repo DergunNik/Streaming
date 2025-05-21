@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+option csharp_namespace = "Account";
+
+import "google/protobuf/empty.proto";
+
+package account;
+
+service AccountService {
+  rpc GetAccount(GetAccountRequest) returns (GetAccountReply);
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountReply);
+  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountReply);
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsReply);
+  rpc SetBanStatus(AccountBanRequest) returns (google.protobuf.Empty);
+}
+
+message GetAccountRequest {
+  int32 user_id = 1;
+}
+
+message SetAccountInfo {
+  int32 user_id = 1;
+  optional bytes avatar_image = 2;
+  optional bytes background_image = 3;
+  optional string description = 4;
+}
+
+message AccountInfo {
+  int32 user_id = 1;
+  optional string avatar_public_id = 2;
+  optional string background_public_id = 3;
+  optional string description = 4;
+  bool is_banned = 5;
+}
+
+message GetAccountReply {
+    AccountInfo info = 1;
+}
+
+message CreateAccountRequest {
+  SetAccountInfo info = 1;
+}
+
+message CreateAccountReply {
+  AccountInfo info = 1;
+}
+
+message UpdateAccountRequest {
+  SetAccountInfo info = 1;
+}
+
+message UpdateAccountReply {
+  AccountInfo info = 1;
+}
+
+message AccountBanRequest {
+  int32 user_id = 1;
+  bool is_banned = 2;
+}
+
+message ListAccountsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  optional bool is_banned_status = 3;
+}
+
+message ListAccountsReply {
+  repeated AccountInfo accounts = 1;
+  int32 total_count = 2;
+}

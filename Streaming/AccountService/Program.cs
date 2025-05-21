@@ -1,14 +1,11 @@
-using AuthService.Settings;
+using AccountService.Data;
+using AccountService.Services;
+using AccountService.Settings;
 using CloudinaryDotNet;
 using CloudinaryUtils.DependencyInjection;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using VoDService.Data;
-using VoDService.HealthChecks;
-using VoDService.Services;
-using VoDService.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,9 +23,9 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 
 builder.Services.AddGrpc();
-
 builder.Services
     .Configure<CloudinaryRestrictions>(builder.Configuration)
+    .Configure<ContentRestrictions>(builder.Configuration)
     .Configure<DbCredentials>(builder.Configuration)
     .AddDbContext<AppDbContext>((serviceProvider, options) =>
     {
@@ -36,24 +33,16 @@ builder.Services
         var connectionString = dbCredentials.ToConnectionString();
         options.UseNpgsql(connectionString);
     })
-    .AddScoped<VideoService>()
+    .AddScoped<AccountService.Services.AccountService>()
     .AddCloudinaryFromConfig(builder.Configuration);
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>("db", tags: ["ready"])
     .AddCloudinaryHealthCheck(tags: ["ready"]);
 
+
 var app = builder.Build();
 
-app.MapGrpcService<VideoService>();
-
-app.MapHealthChecks("/health/live", new HealthCheckOptions
-{
-    Predicate = _ => false
-});
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = hc => hc.Tags.Contains("ready")
-});
+app.MapGrpcService<AccountService.Services.AccountService>();
 
 app.Run();

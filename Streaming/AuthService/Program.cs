@@ -1,4 +1,4 @@
-using AuthService.Persistence;
+using AuthService.Data;
 using AuthService.Service.HelpersImplementations;
 using AuthService.Service.HelpersInterfaces;
 using AuthService.Settings;

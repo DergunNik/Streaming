@@ -1,22 +1,22 @@
 ﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vod-svc-deployment
+  name: acc-svc-deployment
   labels:
-    app: vod-svc-lbl
+    app: acc-svc-lbl
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: vod-svc-lbl
+      app: acc-svc-lbl
   template:
     metadata:
       labels:
-        app: vod-svc-lbl
+        app: acc-svc-lbl
     spec:
       containers:
-        - name: vod-svc
-          image: dergunnik/streaming-vod-service:latest
+        - name: acc-svc
+          image: dergunnik/streaming-acc-service:latest
           ports:
             - containerPort: 8080
             - containerPort: 5000
@@ -24,27 +24,27 @@ spec:
             - name: DbCredentials__User
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-secret
+                  name: acc-pgsql-secret
                   key: pgsql-user
             - name: DbCredentials__Password
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-secret
+                  name: acc-pgsql-secret
                   key: pgsql-password
             - name: DbCredentials__Db
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-secret
+                  name: acc-pgsql-secret
                   key: pgsql-db
             - name: DbCredentials__Host
               valueFrom:
                 configMapKeyRef:
-                  name: vod-pgsql-config
+                  name: acc-pgsql-config
                   key: db-url
             - name: DbCredentials__Port
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-config
+                  name: acc-pgsql-config
                   key: db-port
             - name: CloudinarySettings__CloudName
               valueFrom:
@@ -79,10 +79,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vod-svc-service
+  name: acc-svc-service
 spec:
   selector:
-    app: vod-svc-lbl
+    app: acc-svc-lbl
   ports:
     - name: grpc
       protocol: TCP

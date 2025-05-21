@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: acc-service-config
+data:
+  host: "acc-svc-service"
+  http-port: "5000"
+  grpc-port: "8080"

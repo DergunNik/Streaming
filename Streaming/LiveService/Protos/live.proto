@@ -1,0 +1,106 @@
+﻿syntax = "proto3";
+
+package livestream;
+
+option csharp_namespace = "Live";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service LiveService {
+  rpc CreateStream (CreateStreamRequest) returns (CreateStreamReply);
+  rpc GetStream (GetStreamRequest) returns (GetStreamReply);
+  rpc ListStreams (ListStreamsRequest) returns (ListStreamsReply);
+  rpc DeleteStream (DeleteStreamRequest) returns (google.protobuf.Empty);
+  rpc StartStream (ControlStreamRequest) returns (google.protobuf.Empty);
+  rpc StopStream (ControlStreamRequest) returns (google.protobuf.Empty);
+  rpc AddOutput (AddOutputRequest) returns (AddOutputReply);
+  rpc RemoveOutput (RemoveOutputRequest) returns (google.protobuf.Empty);
+  rpc GetStreamOutputs (GetStreamRequest) returns (GetStreamOutputsReply);
+  rpc GetHlsUrl (GetStreamRequest) returns (GetUrlReply);
+  rpc GetDashUrl (GetStreamRequest) returns (GetUrlReply);
+}
+
+
+message CreateStreamRequest {
+  string name = 1;
+  int32 max_runtime = 2;
+  int32 idle_timeout = 3;
+}
+
+message CreateStreamReply {
+  string id = 1;
+  string rtmp_url = 2;
+  string stream_key = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message GetStreamRequest {
+  string id = 1;
+}
+
+message GetStreamReply {
+  string id = 1;
+  string name = 2;
+  string status = 3;
+  string rtmp_url = 4;
+  string stream_key = 5;
+  int32 max_runtime = 6;
+  int32 idle_timeout = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message ListStreamsRequest {
+  int32 page_size = 1;
+  string next_page_token = 2;
+}
+
+message ListStreamsReply {
+  repeated GetStreamReply streams = 1;
+  string next_page_token = 2;
+}
+
+message DeleteStreamRequest {
+  string id = 1;
+}
+
+message ControlStreamRequest {
+  string id = 1;
+}
+
+message AddOutputRequest {
+  string stream_id = 1;
+  string name = 2;
+  enum OutputType { RTMP = 0; HLS = 1; DASH = 2; SIMULCAST = 3; }
+  OutputType type = 3;
+  string uri = 4;
+  string stream_key = 5;
+  string vendor = 6;
+}
+
+message AddOutputReply {
+  string id = 1;
+}
+
+message RemoveOutputRequest {
+  string stream_id = 1;
+  string output_id = 2;
+}
+
+message GetStreamOutputsReply {
+  repeated OutputInfo outputs = 1;
+}
+
+message OutputInfo {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string uri = 4;
+  string vendor = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message GetUrlReply {
+  string url = 1;
+}

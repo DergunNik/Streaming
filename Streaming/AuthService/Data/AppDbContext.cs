@@ -3,7 +3,7 @@ using AuthService.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace AuthService.Persistence;
+namespace AuthService.Data;
 
 public class AppDbContext(
     IOptions<DbCredentials> dbCredentials,

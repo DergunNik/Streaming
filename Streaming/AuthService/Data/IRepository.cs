@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace AuthService.Persistence;
+namespace AuthService.Data;
 
 public interface IRepository<T>
 {

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: acc-pgsql-config
+data:
+  db-url: "acc-pgsql-service"
+  db-port: "5432"

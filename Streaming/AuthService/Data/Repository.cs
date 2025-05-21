@@ -2,7 +2,7 @@
 using AuthService.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace AuthService.Persistence;
+namespace AuthService.Data;
 
 public class EfRepository<T>(AppDbContext context) : IRepository<T> where T : Entity
 {
