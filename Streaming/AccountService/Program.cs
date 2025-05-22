@@ -3,6 +3,7 @@ using AccountService.Services;
 using AccountService.Settings;
 using CloudinaryDotNet;
 using CloudinaryUtils.DependencyInjection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -44,5 +45,14 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 app.MapGrpcService<AccountService.Services.AccountService>();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = hc => hc.Tags.Contains("ready")
+});
 
 app.Run();

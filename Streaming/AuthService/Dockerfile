@@ -5,6 +5,8 @@ EXPOSE 5000
 
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV JwtSettings__Key=""
+ENV JwtSettings__Issuer=""
+ENV JwtSettings__Audience=""
 ENV DbCredentials__User=""
 ENV DbCredentials__Password=""
 ENV DbCredentials__Db=""

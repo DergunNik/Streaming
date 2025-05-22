@@ -1,21 +1,32 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
+EXPOSE 5000
+
+ENV ASPNETCORE_ENVIRONMENT=Development
+ENV JwtSettings__Key=""
+ENV JwtSettings__Issuer=""
+ENV JwtSettings__Audience=""
+ENV DbCredentials__User=""
+ENV DbCredentials__Password=""
+ENV DbCredentials__Db=""
+ENV DbCredentials__Host="" 
+ENV DbCredentials__Port=""
+ENV ConnectionStrings__RedisSignalRBackplane=""
+ENV CloudinarySettings__CloudName=""
+ENV CloudinarySettings__ApiKey=""
+ENV CloudinarySettings__ApiSecret=""
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["LiveService/LiveService.csproj", "LiveService/"]
-RUN dotnet restore "LiveService/LiveService.csproj"
+COPY ["LiveService.csproj", "./"]
+RUN dotnet restore "LiveService.csproj"
 COPY . .
-WORKDIR "/src/LiveService"
-RUN dotnet build "LiveService.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src"
+RUN dotnet build "LiveService.csproj" -c Release -o /app/build
 
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "LiveService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "LiveService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app

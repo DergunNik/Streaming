@@ -19,7 +19,7 @@ public class JwtService(
     IRepository<User> userRepository,
     IRepository<RefreshToken> refreshTokenRepository,
     IHashService hashService,
-    JwtSettings credentials
+    JwtSettings jwtSettings
 ) : IJwtService
 {
     public async Task<(string jwtToken, string refreshToken)> GenerateTokenAsync(string email, string password)
@@ -31,7 +31,7 @@ public class JwtService(
         if (((byte)user.BanStatus & (byte)BanStatus.CannotLogin) != 0)
             throw new AuthenticationException("The user is banned.");
 
-        if (!await hashService.CheckPasswordAsync(password, user.PasswordHash)) // теперь только один аргумент
+        if (!await hashService.CheckPasswordAsync(password, user.PasswordHash))
             throw new ArgumentException("Wrong email or password.");
 
         var jwtToken = GenerateJwtToken(email, user.Id, user.UserRole);
@@ -50,7 +50,7 @@ public class JwtService(
         var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(credentials.Key)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
             ValidateIssuer = false,
             ValidateAudience = false
         };
@@ -125,13 +125,17 @@ public class JwtService(
             new(ClaimTypes.NameIdentifier, id.ToString()),
             new(ClaimTypes.Role, userRole.ToString())
         };
+        var issuer = jwtSettings.Issuer;
+        var audience = jwtSettings.Audience;
         var jwtToken = new JwtSecurityToken(
             expires: DateTime.UtcNow.Add(authSettings.Value.AccessTokenLifetime),
             claims: claims,
+            issuer: issuer,
+            audience: audience,
             signingCredentials:
             new SigningCredentials(
                 new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(credentials.Key)),
+                    Encoding.UTF8.GetBytes(jwtSettings.Key)),
                 SecurityAlgorithms.HmacSha256));
 
         return new JwtSecurityTokenHandler().WriteToken(jwtToken);

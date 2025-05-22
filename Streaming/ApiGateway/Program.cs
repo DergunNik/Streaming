@@ -6,7 +6,6 @@ using Grpc.Net.Client.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using ServiceConfig = Grpc.Net.Client.Configuration.ServiceConfig;
@@ -72,6 +71,8 @@ builder.Services
         o.Credentials = ChannelCredentials.Insecure;
     });
 
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
 var app = builder.Build();
 
@@ -81,6 +82,7 @@ app.UseHttpsRedirection()
     .UseAuthentication()
     .UseAuthorization();
 
+app.MapReverseProxy();
 app.MapControllers();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
