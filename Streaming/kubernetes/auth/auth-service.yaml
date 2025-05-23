@@ -19,7 +19,6 @@ spec:
           image: dergunnik/streaming-auth-service:latest
           ports:
             - containerPort: 8080
-            - containerPort: 5000
           env:
             - name: DbCredentials__User
               valueFrom:
@@ -66,27 +65,22 @@ spec:
                 configMapKeyRef:
                   name: email-service-config.yaml
                   key: host
-            - name: EmailServiceAddress__HttpPort
+            - name: EmailServiceAddress__Port
               valueFrom:
                 configMapKeyRef:
                   name: email-service-config.yaml
-                  key: http-port
-            - name: EmailServiceAddress__GrpcPort
-              valueFrom:
-                configMapKeyRef:
-                  name: email-service-config.yaml
-                  key: grpc-port
+                  key: port
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 5000
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 5000
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -99,12 +93,7 @@ spec:
   selector:
     app: auth-svc-lbl
   ports:
-    - name: grpc
+    - name: grpc-and-http
       protocol: TCP
       port: 8080
       targetPort: 8080
-    - name: http
-      protocol: TCP
-      port: 5000
-      targetPort: 5000
-      

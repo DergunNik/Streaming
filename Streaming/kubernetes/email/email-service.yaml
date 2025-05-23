@@ -19,7 +19,6 @@ spec:
           image: dergunnik/streaming-email-service:latest
           ports:
             - containerPort: 8080
-            - containerPort: 5000
           env:
             - name: EmailCredentials__Email
               valueFrom:
@@ -34,14 +33,14 @@ spec:
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 5000
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 5000
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -58,8 +57,3 @@ spec:
       protocol: TCP
       port: 8080
       targetPort: 8080
-    - name: http
-      protocol: TCP
-      port: 5000
-      targetPort: 5000
-      

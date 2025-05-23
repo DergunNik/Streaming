@@ -3,11 +3,10 @@
 public class EmailServiceAddress
 {
     public string Host { get; set; }
-    public string HttpPort { get; set; }
-    public string GrpcPort { get; set; }
+    public string Port { get; set; }
     
-    public string GetEmailHttpUrl() => BuildUri("http", HttpPort);
-    public string GetEmailGrpcUrl() => BuildUri("http", GrpcPort);
+    public string GetEmailHttpUrl() => BuildUri("http", Port);
+    public string GetEmailGrpcUrl() => BuildUri("http", Port);
     
     private string BuildUri(string scheme, string port)
     {

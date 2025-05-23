@@ -1,23 +1,23 @@
 ﻿apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: acc-pgsql
+  name: live-pgsql
   labels:
-    app: acc-pgsql-lbl
+    app: live-pgsql-lbl
 spec:
-  serviceName: acc-pgsql-service
+  serviceName: live-pgsql-service
   replicas: 1
   selector:
     matchLabels:
-      app: acc-pgsql-lbl
+      app: live-pgsql-lbl
   template:
     metadata:
       labels:
-        app: acc-pgsql-lbl
+        app: live-pgsql-lbl
     spec:
       terminationGracePeriodSeconds: 10
       containers:
-        - name: acc-pgsql-container
+        - name: live-pgsql-container
           image: postgres:16
           ports:
             - name: pgsql
@@ -26,19 +26,19 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: acc-pgsql-secret
+                  name: live-pgsql-secret
                   key: pgsql-user
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: acc-pgsql-secret
+                  name: live-pgsql-secret
                   key: pgsql-password
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: acc-pgsql-secret
+                  name: live-pgsql-secret
                   key: pgsql-db
-            - name: PGDATA
+            - name: PGDATA 
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: pgsql-data
@@ -59,7 +59,7 @@ spec:
                 - pg_isready
                 - -U
                 - "$(POSTGRES_USER)"
-            initialDelaySeconds: 15 
+            initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
@@ -75,14 +75,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: acc-pgsql-service
+  name: live-pgsql-service
   labels:
-    app: acc-pgsql-lbl
+    app: live-pgsql-lbl
 spec:
   selector:
-    app: acc-pgsql-lbl
+    app: live-pgsql-lbl
   ports:
     - name: pgsql
       protocol: TCP
       port: 5432
-      targetPort: 5432
+      targetPort: 5432 

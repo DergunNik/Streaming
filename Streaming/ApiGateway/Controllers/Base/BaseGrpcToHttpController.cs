@@ -49,7 +49,7 @@ public abstract class BaseGrpcToHttpController : ControllerBase
                 problemDetails.Detail = ex.Status.Detail;
                 break;
             case Grpc.Core.StatusCode.Internal:
-                problemDetails.Title = "Auth service internal error.";
+                problemDetails.Title = "AuthTests service internal error.";
                 problemDetails.Status = StatusCodes.Status500InternalServerError;
                 problemDetails.Detail = "An internal error occurred in the authentication service. Please try again later.";
                 break;

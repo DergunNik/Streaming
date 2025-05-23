@@ -1,0 +1,6 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+data:
+  connection-string: "redis-svc:6379"

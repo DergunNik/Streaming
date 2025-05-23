@@ -10,19 +10,6 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(8080, listenOptions =>
-    {
-        listenOptions.Protocols = HttpProtocols.Http2;
-    });
-    
-    options.ListenAnyIP(5000, listenOptions =>
-    {
-        listenOptions.Protocols = HttpProtocols.Http1;
-    });
-});
-
 var emailConfig = builder.Configuration.GetSection("EmailServiceAddress").Get<EmailServiceAddress>();
 
 builder.Services.AddGrpc();

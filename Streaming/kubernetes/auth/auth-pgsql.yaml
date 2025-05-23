@@ -1,10 +1,11 @@
 ﻿apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: auth-pgsql-deployment
+  name: auth-pgsql
   labels:
     app: auth-pgsql-lbl
 spec:
+  serviceName: auth-pgsql-service
   replicas: 1
   selector:
     matchLabels:
@@ -14,19 +15,21 @@ spec:
       labels:
         app: auth-pgsql-lbl
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
-        - name: auth-pgsql
+        - name: auth-pgsql-container
           image: postgres:16
           ports:
-            - containerPort: 5432
+            - name: pgsql
+              containerPort: 5432
           env:
             - name: POSTGRES_USER
-              valueFrom: 
+              valueFrom:
                 secretKeyRef:
                   name: auth-pgsql-secret
                   key: pgsql-user
             - name: POSTGRES_PASSWORD
-              valueFrom: 
+              valueFrom:
                 secretKeyRef:
                   name: auth-pgsql-secret
                   key: pgsql-password
@@ -35,37 +38,55 @@ spec:
                 secretKeyRef:
                   name: auth-pgsql-secret
                   key: pgsql-db
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgsql-data
+              mountPath: /var/lib/postgresql/data
           livenessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
                 - "$(POSTGRES_USER)"
-                - -d
-                - "$(POSTGRES_DB)"
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 2
+                # - -d
+                # - "$(POSTGRES_DB)"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
                 - "$(POSTGRES_USER)"
-                - -d
-                - "$(POSTGRES_DB)"
-            initialDelaySeconds: 2
-            periodSeconds: 3
-            timeoutSeconds: 1
+                # - -d
+                # - "$(POSTGRES_DB)"
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+  volumeClaimTemplates:
+    - metadata:
+        name: pgsql-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 100Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: auth-pgsql-service
+  labels:
+    app: auth-pgsql-lbl
 spec:
   selector:
     app: auth-pgsql-lbl
   ports:
-    - protocol: TCP
+    - name: pgsql
+      protocol: TCP
       port: 5432
       targetPort: 5432

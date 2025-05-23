@@ -30,16 +30,11 @@ spec:
                 configMapKeyRef:
                   name: auth-service-config.yaml
                   key: host
-            - name: ServiceAddresses__AuthService__HttpPort
+            - name: ServiceAddresses__AuthService__Port
               valueFrom:
                 configMapKeyRef:
                   name: auth-service-config.yaml
-                  key: http-port
-            - name: ServiceAddresses__AuthService__GrpcPort
-              valueFrom:
-                configMapKeyRef:
-                  name: auth-service-config.yaml
-                  key: grpc-port
+                  key: port
           livenessProbe:
             httpGet:
               path: /health/live

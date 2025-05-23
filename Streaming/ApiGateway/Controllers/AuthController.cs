@@ -138,7 +138,7 @@ namespace ApiGateway.Controllers
             var emailClaim = User.FindFirst(ClaimTypes.Name); 
             if (emailClaim == null || string.IsNullOrEmpty(emailClaim.Value))
             {
-                _logger.LogWarning("Gateway (Auth): Logout - ClaimTypes.Name (email) is missing or empty in the token for an authenticated user.");
+                _logger.LogWarning("Gateway (AuthTests): Logout - ClaimTypes.Name (email) is missing or empty in the token for an authenticated user.");
                 return Unauthorized(new ProblemDetails 
                 { 
                     Title = "User email not found in token.",
@@ -149,14 +149,14 @@ namespace ApiGateway.Controllers
             }
 
             var userEmail = emailClaim.Value;
-            _logger.LogInformation("Gateway (Auth): HTTP Logout request initiated for user email: {UserEmail}", userEmail);
+            _logger.LogInformation("Gateway (AuthTests): HTTP Logout request initiated for user email: {UserEmail}", userEmail);
 
             var grpcLogoutRequest = new LogoutRequest { Email = userEmail };
 
             try
             {
                 await _authServiceClient.LogoutAsync(grpcLogoutRequest);
-                _logger.LogInformation("Gateway (Auth): gRPC Logout call successful for user email: {UserEmail}", userEmail);
+                _logger.LogInformation("Gateway (AuthTests): gRPC Logout call successful for user email: {UserEmail}", userEmail);
                 return Ok();
             }
             catch (RpcException ex)

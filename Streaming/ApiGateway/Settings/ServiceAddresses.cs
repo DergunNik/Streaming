@@ -8,11 +8,10 @@ public class ServiceAddresses
 public class ServiceConfig
 {
     public string Host { get; set; }
-    public string HttpPort { get; set; }
-    public string GrpcPort { get; set; }
+    public string Port { get; set; }
 
-    public string GetHttpUrl() => BuildUri("http", HttpPort);
-    public string GetGrpcUrl() => BuildUri("http", GrpcPort);
+    public string GetHttpUrl() => BuildUri("http", Port);
+    public string GetGrpcUrl() => BuildUri("http", Port);
 
     private string BuildUri(string scheme, string port)
     {

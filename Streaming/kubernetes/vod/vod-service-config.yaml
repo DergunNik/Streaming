@@ -4,5 +4,5 @@ metadata:
   name: vod-service-config
 data:
   host: "vod-svc-service"
-  http-port: "5000"
-  grpc-port: "8080"
+  port: "8080"
+  

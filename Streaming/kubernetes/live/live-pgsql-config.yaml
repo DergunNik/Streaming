@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: live-pgsql-config
+data:
+  db-url: "live-pgsql-service"
+  db-port: "5432"

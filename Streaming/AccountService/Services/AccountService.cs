@@ -7,6 +7,7 @@ using CloudinaryDotNet.Actions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace AccountService.Services;
 
@@ -16,11 +17,11 @@ public class AccountService : Account.AccountService.AccountServiceBase
     private readonly Cloudinary _cloudinary;
     private readonly ContentRestrictions _restrictions;
 
-    public AccountService(AppDbContext dbContext, Cloudinary cloudinary, ContentRestrictions restrictions)
+    public AccountService(AppDbContext dbContext, Cloudinary cloudinary, IOptions<ContentRestrictions> restrictions)
     {
         _dbContext = dbContext;
         _cloudinary = cloudinary;
-        _restrictions = restrictions;
+        _restrictions = restrictions.Value;
     }
 
     public override async Task<GetAccountReply> GetAccount(GetAccountRequest request, ServerCallContext context)

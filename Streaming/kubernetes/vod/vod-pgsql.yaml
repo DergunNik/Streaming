@@ -1,10 +1,11 @@
 ﻿apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: vod-pgsql-deployment
+  name: vod-pgsql
   labels:
     app: vod-pgsql-lbl
 spec:
+  serviceName: vod-pgsql-service
   replicas: 1
   selector:
     matchLabels:
@@ -14,19 +15,21 @@ spec:
       labels:
         app: vod-pgsql-lbl
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
-        - name: vod-pgsql
+        - name: vod-pgsql-container
           image: postgres:16
           ports:
-            - containerPort: 5432
+            - name: pgsql
+              containerPort: 5432
           env:
             - name: POSTGRES_USER
-              valueFrom: 
+              valueFrom:
                 secretKeyRef:
                   name: vod-pgsql-secret
                   key: pgsql-user
             - name: POSTGRES_PASSWORD
-              valueFrom: 
+              valueFrom:
                 secretKeyRef:
                   name: vod-pgsql-secret
                   key: pgsql-password
@@ -35,37 +38,51 @@ spec:
                 secretKeyRef:
                   name: vod-pgsql-secret
                   key: pgsql-db
+            - name: PGDATA 
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgsql-data
+              mountPath: /var/lib/postgresql/data 
           livenessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
                 - "$(POSTGRES_USER)"
-                - -d
-                - "$(POSTGRES_DB)"
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 2
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           readinessProbe:
             exec:
               command:
                 - pg_isready
                 - -U
                 - "$(POSTGRES_USER)"
-                - -d
-                - "$(POSTGRES_DB)"
-            initialDelaySeconds: 2
-            periodSeconds: 3
-            timeoutSeconds: 1
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+  volumeClaimTemplates:
+    - metadata:
+        name: pgsql-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 100Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: vod-pgsql-service
+  labels:
+    app: vod-pgsql-lbl
 spec:
   selector:
     app: vod-pgsql-lbl
   ports:
-    - protocol: TCP
+    - name: pgsql
+      protocol: TCP
       port: 5432
-      targetPort: 5432
+      targetPort: 5432 

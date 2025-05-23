@@ -1,49 +1,49 @@
 ﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vod-svc-deployment
+  name: live-svc-deployment
   labels:
-    app: vod-svc-lbl
+    app: live-svc-lbl
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: vod-svc-lbl
+      app: live-svc-lbl
   template:
     metadata:
       labels:
-        app: vod-svc-lbl
+        app: live-svc-lbl
     spec:
       containers:
-        - name: vod-svc
-          image: dergunnik/streaming-vod-service:latest
+        - name: live-svc
+          image: dergunnik/streaming-live-service:latest
           ports:
             - containerPort: 8080
           env:
             - name: DbCredentials__User
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-secret
+                  name: live-pgsql-secret
                   key: pgsql-user
             - name: DbCredentials__Password
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-secret
+                  name: live-pgsql-secret
                   key: pgsql-password
             - name: DbCredentials__Db
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-secret
+                  name: live-pgsql-secret
                   key: pgsql-db
             - name: DbCredentials__Host
               valueFrom:
                 configMapKeyRef:
-                  name: vod-pgsql-config
+                  name: live-pgsql-config
                   key: db-url
             - name: DbCredentials__Port
               valueFrom:
                 secretKeyRef:
-                  name: vod-pgsql-config
+                  name: live-pgsql-config
                   key: db-port
             - name: CloudinarySettings__CloudName
               valueFrom:
@@ -60,6 +60,11 @@ spec:
                 secretKeyRef:
                   name: cloudinary-secret
                   key: api-secret
+            - name: ConnectionStrings__RedisSignalRBackplane
+              valueFrom:
+                configMapKeyRef:
+                  name: redis-config
+                  key: connection-string
           livenessProbe:
             httpGet:
               path: /health/live
@@ -78,13 +83,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vod-svc-service
+  name: live-svc-service
 spec:
   selector:
-    app: vod-svc-lbl
+    app: live-svc-lbl
   ports:
     - name: grpc-and-http
       protocol: TCP
       port: 8080
       targetPort: 8080
-      

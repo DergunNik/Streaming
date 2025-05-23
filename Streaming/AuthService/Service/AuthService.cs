@@ -55,7 +55,7 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
         try
         {
             var (jwtToken, refreshToken) =
-                await _jwtService.GenerateTokenAsync(request.Email, request.Password);
+                await _jwtService.GenerateTokensAsync(request.Email, request.Password);
             return ConstructReply(jwtToken, refreshToken);
         }
         catch (AuthenticationException ex)

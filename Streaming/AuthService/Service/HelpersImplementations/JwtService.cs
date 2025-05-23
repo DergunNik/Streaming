@@ -22,7 +22,7 @@ public class JwtService(
     JwtSettings jwtSettings
 ) : IJwtService
 {
-    public async Task<(string jwtToken, string refreshToken)> GenerateTokenAsync(string email, string password)
+    public async Task<(string jwtToken, string refreshToken)> GenerateTokensAsync(string email, string password)
     {
         logger.LogInformation($"Checking user {email} for jwt token.");
         var user = await userRepository.FirstOrDefaultAsync(u => u.Email == email)

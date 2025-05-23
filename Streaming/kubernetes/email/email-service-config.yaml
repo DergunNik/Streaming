@@ -4,5 +4,5 @@ metadata:
   name: email-service-config
 data:
   host: "email-svc-service"
-  http-port: "5000"
-  grpc-port: "8080"
+  port: "8080"
+  

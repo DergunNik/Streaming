@@ -4,5 +4,4 @@ metadata:
   name: auth-service-config
 data:
   host: "auth-svc-service"
-  http-port: "5000"
-  grpc-port: "8080"
+  port: "8080"

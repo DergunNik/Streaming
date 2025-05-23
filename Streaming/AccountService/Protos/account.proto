@@ -3,6 +3,7 @@ syntax = "proto3";
 option csharp_namespace = "Account";
 
 import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 package account;
 
@@ -12,6 +13,10 @@ service AccountService {
   rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountReply);
   rpc ListAccounts(ListAccountsRequest) returns (ListAccountsReply);
   rpc SetBanStatus(AccountBanRequest) returns (google.protobuf.Empty);
+}
+
+message ans {
+  string s = 1;
 }
 
 message GetAccountRequest {

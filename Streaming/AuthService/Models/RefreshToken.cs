@@ -1,6 +1,6 @@
 ﻿namespace AuthService.Models;
 
-public class RefreshToken
+public class RefreshToken : Entity
 {
     public string Token { get; set; }
     public DateTime ExpiresOnUtc { get; set; }
