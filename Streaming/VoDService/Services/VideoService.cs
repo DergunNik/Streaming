@@ -64,7 +64,7 @@ public class VideoService : VoD.VideoService.VideoServiceBase
 
         return new UploadVideoReply
         {
-            PublicId   = result.PublicId,
+            PublicId   = result.PublicId ?? throw new RpcException(new Status(StatusCode.InvalidArgument, "No video source provided")),
             SecureUrl  = result.SecureUrl.ToString(),
             UploadedAt = Timestamp.FromDateTime(result.CreatedAt.ToUniversalTime())
         };
@@ -270,6 +270,8 @@ public class VideoService : VoD.VideoService.VideoServiceBase
             _dbContext.Videos.Remove(video);
             await _dbContext.SaveChangesAsync(context.CancellationToken);
         }
+
+        await  _dbContext.Database.CommitTransactionAsync();
         
         return new Empty();
     }

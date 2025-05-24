@@ -3,7 +3,7 @@ syntax = "proto3";
 option csharp_namespace = "Account";
 
 import "google/protobuf/empty.proto";
-import "google/api/annotations.proto";
+//import "google/api/annotations.proto";proto
 
 package account;
 
