@@ -6,67 +6,59 @@ using LiveService.Services;
 using LiveService.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; 
-})
-.AddJwtBearer(options =>
-{
-    var jwtKey = builder.Configuration["JwtSettings:Key"];
-    var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
-    var jwtAudience = builder.Configuration["JwtSettings:Audience"];
-
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidIssuer = jwtIssuer,
-
-        ValidateAudience = true,
-        ValidAudience = jwtAudience,
-
-        ValidateLifetime = true,
-
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-
-        ClockSkew = TimeSpan.FromMinutes(1)
-    };
-
-    options.Events = new JwtBearerEvents
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
     {
-        OnMessageReceived = context =>
+        var jwtKey = builder.Configuration["JwtSettings:Key"];
+        var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
+        var jwtAudience = builder.Configuration["JwtSettings:Audience"];
+
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
 
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/streamchathub"))
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+
+            ValidateLifetime = true,
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                context.Token = accessToken;
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/streamchathub"))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
             }
-            return Task.CompletedTask;
-        }
-    };
-});
+        };
+    });
 
 builder.Services.AddAuthorization();
 
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisSignalRBackplane");
-builder.Services.AddSignalR(options =>
-    {
-        options.EnableDetailedErrors = builder.Environment.IsDevelopment();
-    })
-    .AddStackExchangeRedis(redisConnectionString, options => {
-        options.Configuration.ChannelPrefix = "LiveService";
-    });
+builder.Services.AddSignalR(options => { options.EnableDetailedErrors = builder.Environment.IsDevelopment(); })
+    .AddStackExchangeRedis(redisConnectionString, options => { options.Configuration.ChannelPrefix = "LiveService"; });
 
-builder.Services.AddGrpc();
+builder.Services.AddGrpc().AddJsonTranscoding();
 builder.Services
     .Configure<DbCredentials>(builder.Configuration)
     .Configure<ContentRestrictions>(builder.Configuration)
@@ -78,7 +70,7 @@ builder.Services
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>(tags: ["ready"])
     .AddCloudinaryHealthCheck(tags: ["ready"]);
-    
+
 var app = builder.Build();
 
 app.UseAuthentication();

@@ -5,18 +5,20 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <IncludeHttpRuleProtos>true</IncludeHttpRuleProtos>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="8.0.1" />
+        <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="8.0.1"/>
         <PackageReference Include="Grpc.AspNetCore" Version="2.57.0"/>
         <PackageReference Include="Grpc.Tools" Version="2.71.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1"/>
-        <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="8.0.16" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.11" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.15" />
+        <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="8.0.16"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.11"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0"/>
@@ -30,12 +32,12 @@
 
     <ItemGroup>
         <Protobuf Include="Protos\auth.proto">
-          <GrpcServices>Server</GrpcServices>
-          <Access>Public</Access>
-          <ProtoCompile>True</ProtoCompile>
-          <CompileOutputs>True</CompileOutputs>
-          <OutputDir>obj\Debug\net8.0\</OutputDir>
-          <Generator>MSBuild:Compile</Generator>
+            <GrpcServices>Server</GrpcServices>
+            <Access>Public</Access>
+            <ProtoCompile>True</ProtoCompile>
+            <CompileOutputs>True</CompileOutputs>
+            <OutputDir>obj\Debug\net8.0\</OutputDir>
+            <Generator>MSBuild:Compile</Generator>
         </Protobuf>
         <Protobuf Include="Protos\email.proto" GrpcServices="Client"/>
     </ItemGroup>

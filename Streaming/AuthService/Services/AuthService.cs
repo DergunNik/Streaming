@@ -1,32 +1,33 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Net.Mail;
+﻿using System.Net.Mail;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using AuthServerApp;
 using AuthService.Data;
 using AuthService.Models;
-using AuthService.Service.HelpersImplementations;
-using AuthService.Service.HelpersInterfaces;
+using AuthService.Services.HelpersImplementations;
+using AuthService.Services.HelpersInterfaces;
 using AuthService.Settings;
 using EmailClientApp;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
-namespace AuthService.Service;
+namespace AuthService.Services;
 
 public class AuthService : AuthServerApp.AuthService.AuthServiceBase
 {
-    private readonly ILogger<JwtService> _logger;
-    private readonly IHashService _hashService;
-    private readonly IRepository<User> _usersRepository;
-    private readonly IRepository<UserRegRequest> _requestsRepository;
-    private readonly IRepository<RefreshToken> _refreshTokensRepository;
-    private readonly IJwtService _jwtService;
     private readonly IOptions<AuthSettings> _authOptions;
-    private readonly IOptions<EncryptionSettings> _encryptionOptions;
     private readonly EmailService.EmailServiceClient _emailServiceClient;
+    private readonly IOptions<EncryptionSettings> _encryptionOptions;
+    private readonly IHashService _hashService;
+    private readonly IJwtService _jwtService;
+    private readonly ILogger<JwtService> _logger;
+    private readonly IRepository<RefreshToken> _refreshTokensRepository;
+    private readonly IRepository<UserRegRequest> _requestsRepository;
+    private readonly IRepository<User> _usersRepository;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthService(
         ILogger<JwtService> logger,
@@ -37,7 +38,8 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
         IJwtService jwtService,
         IOptions<AuthSettings> authOptions,
         IOptions<EncryptionSettings> encryptionOptions,
-        EmailService.EmailServiceClient emailServiceClient)
+        EmailService.EmailServiceClient emailServiceClient,
+        IHttpContextAccessor httpContextAccessor)
     {
         _logger = logger;
         _hashService = hashService;
@@ -48,8 +50,9 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
         _authOptions = authOptions;
         _encryptionOptions = encryptionOptions;
         _emailServiceClient = emailServiceClient;
+        _httpContextAccessor = httpContextAccessor;
     }
-    
+
     public override async Task<LoginReply> Login(LoginRequest request, ServerCallContext context)
     {
         try
@@ -107,19 +110,19 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
             RegistrationCode = code,
             ActiveUntil = DateTime.UtcNow.AddMinutes(_authOptions.Value.RegistrationCodeLifetimeMinutes)
         };
-    
+
         await _requestsRepository.AddAsync(userRegRequest, context.CancellationToken);
         await _usersRepository.SaveChangesAsync(context.CancellationToken);
-        
+
         await _emailServiceClient.SendEmailAsync(new EmailRequest
-        {
-            From = "Registration",
-            To = { request.Email },
-            Subject = "Registration code",
-            Body = $"Your registration code: {code}"
-        },
-        cancellationToken: context.CancellationToken);
-        
+            {
+                From = "Registration",
+                To = { request.Email },
+                Subject = "Registration code",
+                Body = $"Your registration code: {code}"
+            },
+            cancellationToken: context.CancellationToken);
+
         return new Empty();
     }
 
@@ -179,13 +182,15 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
             throw new RpcException(new Status(StatusCode.Internal, "No info"));
         }
     }
-    
-    public override async Task<Empty> Logout(LogoutRequest request, ServerCallContext context)
-    {
-        if (string.IsNullOrEmpty(request.Email))
-            throw new RpcException(new Status(StatusCode.Unauthenticated, "Email required"));
 
-        var user = await _usersRepository.FirstOrDefaultAsync(u => u.Email == request.Email, context.CancellationToken)
+    [Authorize]
+    public override async Task<Empty> Logout(Empty request, ServerCallContext context)
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        var id = int.Parse(httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new RpcException(new Status(StatusCode.Unauthenticated, "No user id provided.")));
+        
+        var user = await _usersRepository.FirstOrDefaultAsync(u => u.Id == id, context.CancellationToken)
                    ?? throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
 
         var tokens = await _refreshTokensRepository

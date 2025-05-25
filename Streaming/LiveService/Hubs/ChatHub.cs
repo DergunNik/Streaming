@@ -1,5 +1,4 @@
-﻿using CloudinaryDotNet;
-using LiveService.Settings;
+﻿using LiveService.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
@@ -21,7 +20,7 @@ public class ChatHub : Hub<IChatClient>
     {
         _contentRestrictions = contentRestrictions;
     }
-    
+
     public async Task JoinStreamChat(string streamId)
     {
         if (string.IsNullOrWhiteSpace(streamId)) return;
@@ -30,7 +29,8 @@ public class ChatHub : Hub<IChatClient>
         var groupName = GetStreamChatGroupName(streamId);
 
         await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-        await Clients.Client(Context.ConnectionId).JoinedSuccessfully(streamId, $"Welcome, {userName}! You've joined chat for stream '{streamId}'.");
+        await Clients.Client(Context.ConnectionId).JoinedSuccessfully(streamId,
+            $"Welcome, {userName}! You've joined chat for stream '{streamId}'.");
     }
 
     [Authorize]
@@ -40,7 +40,9 @@ public class ChatHub : Hub<IChatClient>
 
         if (message.Length > _contentRestrictions.MaxCharMessageSize)
         {
-            await Clients.Client(Context.ConnectionId).ReceiveError($"Your message can't be longer than {_contentRestrictions.MaxCharMessageSize} characters.");
+            await Clients.Client(Context.ConnectionId)
+                .ReceiveError(
+                    $"Your message can't be longer than {_contentRestrictions.MaxCharMessageSize} characters.");
             return;
         }
 
@@ -58,7 +60,7 @@ public class ChatHub : Hub<IChatClient>
         var groupName = GetStreamChatGroupName(streamId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
     }
-    
+
     private static string GetStreamChatGroupName(string streamId)
     {
         return $"{StreamChatGroupPrefix}{streamId}";
@@ -67,7 +69,7 @@ public class ChatHub : Hub<IChatClient>
     private (string UserId, string UserName) GetAuthenticatedUserInfo()
     {
         if (Context.User?.Identity?.IsAuthenticated == true)
-        { 
+        {
             var userId = Context.UserIdentifier ?? $"AuthUser_NoId_{Context.ConnectionId[..5]}";
             var userName = Context.User?.Identity?.Name ?? $"UnknownUser_{Context.ConnectionId[..5]}";
 

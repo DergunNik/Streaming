@@ -6,40 +6,85 @@ option csharp_namespace = "Streaming";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
 
 service StreamService {
   // for author
-  rpc CreateStream (CreateStreamRequest) returns (StreamDetailedReply);
-  rpc GetStream (GetStreamRequest) returns (StreamDetailedReply);
-  rpc UpdateStream (UpdateStreamRequest) returns (StreamDetailedReply);
-  rpc DeleteStream (DeleteStreamRequest) returns (google.protobuf.Empty);
-  rpc ActivateStream (StreamActionRequest) returns (google.protobuf.Empty);
-  rpc IdleStream (StreamActionRequest) returns (google.protobuf.Empty);
-  rpc ListStreamOutputs (ListStreamOutputsRequest) returns (ListStreamOutputsReply);
-  rpc AddStreamOutput (AddStreamOutputRequest) returns (StreamOutputInfo);
-  rpc UpdateStreamOutput (UpdateStreamOutputRequest) returns (StreamOutputInfo);
-  rpc DeleteStreamOutput (DeleteStreamOutputRequest) returns (google.protobuf.Empty);
+  rpc CreateStream (CreateStreamRequest) returns (StreamDetailedReply) {
+    option (google.api.http) = {
+      post: "/streams"
+      body: "*"
+    };
+  }
+  rpc GetStream (GetStreamRequest) returns (StreamDetailedReply) {
+    option (google.api.http) = {
+      get: "/streams/{cloudinary_stream_id}"
+    };
+  }
+  rpc UpdateStream (UpdateStreamRequest) returns (StreamDetailedReply) {
+    option (google.api.http) = {
+      patch: "/streams/{cloudinary_stream_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteStream (DeleteStreamRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/streams/{cloudinary_stream_id}"
+      body: "*"
+    };
+  }
+  rpc ActivateStream (StreamActionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/streams/{cloudinary_stream_id}:activate"
+      body: "*"
+    };
+  }
+  rpc IdleStream (StreamActionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/streams/{cloudinary_stream_id}:idle"
+      body: "*"
+    };
+  }
+  rpc ListStreamOutputs (ListStreamOutputsRequest) returns (ListStreamOutputsReply) {
+    option (google.api.http) = {
+      get: "/streams/{cloudinary_stream_id}/outputs"
+    };
+  }
+  rpc AddStreamOutput (AddStreamOutputRequest) returns (StreamOutputInfo) {
+    option (google.api.http) = {
+      post: "/streams/{cloudinary_stream_id}/outputs"
+      body: "*"
+    };
+  }
+  rpc UpdateStreamOutput (UpdateStreamOutputRequest) returns (StreamOutputInfo) {
+    option (google.api.http) = {
+      patch: "/streams/{cloudinary_stream_id}/outputs/{output_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteStreamOutput (DeleteStreamOutputRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/streams/{cloudinary_stream_id}/outputs/{output_id}"
+      body: "*"
+    };
+  }
   // for user
-  rpc GetStreamInfo (GetStreamInfoRequest) returns (GetStreamInfoReply);
-  rpc ListStreams (ListStreamsRequest) returns (ListStreamsReply);
+  rpc GetStreamInfo (GetStreamInfoRequest) returns (GetStreamInfoReply) {
+    option (google.api.http) = {
+      get: "/streams/{cloudinary_stream_id}/info"
+    };
+  }
+  rpc ListStreams (ListStreamsRequest) returns (ListStreamsReply) {
+    option (google.api.http) = {
+      get: "/streams"
+    };
+  }
 }
-
 
 message StreamInputInfo {
   string type = 1;
   string uri = 2;
   string stream_key = 3;
-}
-
-enum UserType {
-  default_user = 0;
-  admin = 1;
-  backend = 2;
-}
-
-message AuthorInfo {
-  optional int32 author_id = 1;
-  UserType user_type = 2;
 }
 
 message StreamDetailedReply {
@@ -56,19 +101,16 @@ message StreamDetailedReply {
 
 message CreateStreamRequest {
   string name = 1;
-  int32 author_id = 2;
   optional int32 idle_timeout_sec = 3;
   optional int32 max_runtime_sec = 4;
 }
 
 message GetStreamRequest {
   string cloudinary_stream_id = 1;
-  AuthorInfo author = 2;
 }
 
 message UpdateStreamRequest {
   string cloudinary_stream_id = 1;
-  AuthorInfo author = 2;
   optional string name = 3;
   optional int32 idle_timeout_sec = 4;
   optional int32 max_runtime_sec = 5;
@@ -76,12 +118,10 @@ message UpdateStreamRequest {
 
 message DeleteStreamRequest {
   string cloudinary_stream_id = 1;
-  AuthorInfo author = 2;
 }
 
 message StreamActionRequest {
   string cloudinary_stream_id = 1;
-  AuthorInfo author = 2;
 }
 
 message StreamInfo {
@@ -126,7 +166,6 @@ message StreamOutputInfo {
 
 message ListStreamOutputsRequest {
   string cloudinary_stream_id = 1;
-  AuthorInfo author = 2;
 }
 
 message ListStreamOutputsReply {
@@ -135,7 +174,6 @@ message ListStreamOutputsReply {
 
 message AddStreamOutputRequest {
   string cloudinary_stream_id = 1;
-  AuthorInfo author = 2;
   string name = 3;
   string type = 4;
   optional string uri = 5;
@@ -147,7 +185,6 @@ message AddStreamOutputRequest {
 message UpdateStreamOutputRequest {
   string cloudinary_stream_id = 1;
   string output_id = 2;
-  AuthorInfo author = 3;
   optional string name = 4;
   optional string uri = 5;
   optional string stream_key = 6;
@@ -157,5 +194,4 @@ message UpdateStreamOutputRequest {
 message DeleteStreamOutputRequest {
   string cloudinary_stream_id = 1;
   string output_id = 2;
-  AuthorInfo author = 3;
 }

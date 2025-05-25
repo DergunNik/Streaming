@@ -6,25 +6,56 @@ package vod;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-
+import "google/api/annotations.proto";
 
 service VideoService {
-  rpc UploadVideo(UploadVideoRequest) returns (UploadVideoReply);
-  rpc GetVideoManifest(GetManifestRequest) returns (GetManifestReply);
-  rpc GetVideoUrl(GetUrlRequest) returns (GetUrlReply);
-  rpc GetVideosOfUser(GetVideosOfUserRequest) returns (GetVideosOfUserReply);
-  rpc SetReaction(SetReactionRequest) returns (SetReactionReply);
-  rpc ListVideos(ListVideosRequest) returns (ListVideosReply);
-  rpc DeleteVideo(DeleteVideoRequest) returns (google.protobuf.Empty);
+  rpc UploadVideo(UploadVideoRequest) returns (UploadVideoReply) {
+    option (google.api.http) = {
+      post: "/videos:upload"
+      body: "*"
+    };
+  }
+  rpc GetVideoManifest(GetManifestRequest) returns (GetManifestReply) {
+    option (google.api.http) = {
+      get: "/videos/{public_id}/manifest"
+      additional_bindings {
+        get: "/videos/{public_id}/manifest/{type}"
+      }
+    };
+  }
+  rpc GetVideoUrl(GetUrlRequest) returns (GetUrlReply) {
+    option (google.api.http) = {
+      get: "/videos/{public_id}/url"
+    };
+  }
+  rpc GetVideosOfUser(GetVideosOfUserRequest) returns (GetVideosOfUserReply) {
+    option (google.api.http) = {
+      get: "/users/{user_id}/videos"
+    };
+  }
+  rpc SetReaction(SetReactionRequest) returns (SetReactionReply) {
+    option (google.api.http) = {
+      post: "/videos/{public_id}:setReaction"
+      body: "*"
+    };
+  }
+  rpc ListVideos(ListVideosRequest) returns (ListVideosReply) {
+    option (google.api.http) = {
+      get: "/videos"
+    };
+  }
+  rpc DeleteVideo(DeleteVideoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/videos/{public_id}"
+    };
+  }
 }
-
 
 message UploadVideoRequest {
   oneof source {
     string uri = 1;
     bytes data = 2;
   }
-  int32 author_id = 3;
   string title = 4;
   string description = 5;
   repeated string tags = 6;
@@ -81,7 +112,6 @@ enum ReactionType {
 
 message SetReactionRequest {
   ReactionType reaction = 1;
-  int32 user_id = 2;
   string public_id = 3;
 }
 

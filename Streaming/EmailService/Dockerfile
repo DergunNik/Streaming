@@ -6,6 +6,9 @@ EXPOSE 5000
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV EmailCredentials__Email=""
 ENV EmailCredentials__AppPassword=""
+ENV JwtSettings__Key=""
+ENV JwtSettings__Issuer=""
+ENV JwtSettings__Audience=""
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src

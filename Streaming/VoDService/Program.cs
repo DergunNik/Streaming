@@ -1,18 +1,50 @@
+using System.Text;
 using AuthService.Settings;
-using CloudinaryDotNet;
 using CloudinaryUtils.DependencyInjection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using VoDService.Data;
-using VoDService.HealthChecks;
 using VoDService.Services;
 using VoDService.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddGrpc();
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        var jwtKey = builder.Configuration["JwtSettings:Key"];
+        var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
+        var jwtAudience = builder.Configuration["JwtSettings:Audience"];
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+
+            ValidateLifetime = true,
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddGrpc().AddJsonTranscoding();
 
 builder.Services
     .Configure<CloudinaryRestrictions>(builder.Configuration)
@@ -31,6 +63,9 @@ builder.Services.AddHealthChecks()
     .AddCloudinaryHealthCheck(tags: ["ready"]);
 
 var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGrpcService<VideoService>();
 

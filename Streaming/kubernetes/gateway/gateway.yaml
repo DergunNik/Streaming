@@ -25,6 +25,16 @@ spec:
                 secretKeyRef:
                   name: jwt-secret.yaml
                   key: jwt-key
+            - name: JwtSettings__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: jwt-config.yaml
+                  key: issuer
+            - name: JwtSettings__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: jwt-secret.yaml
+                  key: audience
             - name: ServiceAddresses__AuthService__Host
               valueFrom:
                 configMapKeyRef:

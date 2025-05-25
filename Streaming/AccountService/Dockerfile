@@ -11,6 +11,9 @@ ENV DbCredentials__Port=""
 ENV CloudinarySettings__CloudName=""
 ENV CloudinarySettings__ApiKey=""
 ENV CloudinarySettings__ApiSecret=""
+ENV JwtSettings__Key=""
+ENV JwtSettings__Issuer=""
+ENV JwtSettings__Audience=""
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src

@@ -7,12 +7,12 @@ namespace AccountService.Data;
 
 public class AppDbContext : DbContext
 {
-    private readonly string _connectionString;
     private readonly CloudinaryRestrictions _cloudinarySettings;
+    private readonly string _connectionString;
     private readonly ContentRestrictions _restrictions;
 
     public AppDbContext(
-        DbContextOptions<AppDbContext> options, 
+        DbContextOptions<AppDbContext> options,
         IOptions<CloudinaryRestrictions> cloudinarySettings,
         IOptions<ContentRestrictions> contentRestrictions,
         IOptions<DbCredentials> dbCredentials)
@@ -28,19 +28,17 @@ public class AppDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured && !string.IsNullOrEmpty(_connectionString))
-        {
             optionsBuilder.UseNpgsql(_connectionString);
-        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         modelBuilder.Entity<AccountInfo>(entity =>
         {
             entity.HasKey(v => v.UserId);
-            
+
             entity.Property(v => v.BackgroundPublicId)
                 .HasMaxLength(_cloudinarySettings.PublicIdMaxSize);
 

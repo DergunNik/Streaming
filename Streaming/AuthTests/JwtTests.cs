@@ -1,228 +1,260 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Linq.Expressions;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using AuthService.Data;
 using AuthService.Models;
-using AuthService.Service.HelpersImplementations;
-using AuthService.Service.HelpersInterfaces;
+using AuthService.Services.HelpersImplementations;
+using AuthService.Services.HelpersInterfaces;
 using AuthService.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
-using Xunit;
 
-namespace AuthService.Tests.Service.HelpersImplementations
+namespace AuthService.Tests.Service.HelpersImplementations;
+
+public class JwtServiceTests
 {
-    public class JwtServiceTests
+    private readonly Mock<IOptions<AuthSettings>> _authSettingsMock;
+    private readonly AuthSettings _defaultAuthSettings;
+    private readonly EncryptionSettings _defaultEncryptionSettings;
+    private readonly Mock<IOptions<EncryptionSettings>> _encryptionSettingsMock;
+    private readonly Mock<IHashService> _hashServiceMock;
+    private readonly JwtSettings _jwtSettings;
+    private readonly Mock<ILogger<JwtService>> _loggerMock;
+    private readonly Mock<IRepository<RefreshToken>> _refreshTokenRepoMock;
+    private readonly Mock<IRepository<User>> _userRepoMock;
+
+    public JwtServiceTests()
     {
-        private readonly Mock<IOptions<AuthSettings>> _authSettingsMock;
-        private readonly Mock<IOptions<EncryptionSettings>> _encryptionSettingsMock;
-        private readonly Mock<ILogger<JwtService>> _loggerMock;
-        private readonly Mock<IRepository<User>> _userRepoMock;
-        private readonly Mock<IRepository<RefreshToken>> _refreshTokenRepoMock;
-        private readonly Mock<IHashService> _hashServiceMock;
-        private readonly JwtSettings _jwtSettings;
-        private readonly AuthSettings _defaultAuthSettings;
-        private readonly EncryptionSettings _defaultEncryptionSettings;
+        _authSettingsMock = new Mock<IOptions<AuthSettings>>();
+        _encryptionSettingsMock = new Mock<IOptions<EncryptionSettings>>();
+        _loggerMock = new Mock<ILogger<JwtService>>();
+        _userRepoMock = new Mock<IRepository<User>>();
+        _refreshTokenRepoMock = new Mock<IRepository<RefreshToken>>();
+        _hashServiceMock = new Mock<IHashService>();
 
-        public JwtServiceTests()
+        _jwtSettings = new JwtSettings
         {
-            _authSettingsMock = new Mock<IOptions<AuthSettings>>();
-            _encryptionSettingsMock = new Mock<IOptions<EncryptionSettings>>();
-            _loggerMock = new Mock<ILogger<JwtService>>();
-            _userRepoMock = new Mock<IRepository<User>>();
-            _refreshTokenRepoMock = new Mock<IRepository<RefreshToken>>();
-            _hashServiceMock = new Mock<IHashService>();
+            Key = "TestSuperSecretKeyForUnitTestPurposeOnly12345", // HS256 requires min 128 bits (16 bytes), this is 45 bytes.
+            Issuer = "TestIssuer",
+            Audience = "TestAudience"
+        };
 
-            _jwtSettings = new JwtSettings
-            {
-                Key = "TestSuperSecretKeyForUnitTestPurposeOnly12345", // HS256 requires min 128 bits (16 bytes), this is 45 bytes.
-                Issuer = "TestIssuer",
-                Audience = "TestAudience"
-            };
-
-            _defaultAuthSettings = new AuthSettings
-            {
-                AccessTokenLifetime = TimeSpan.FromMinutes(15),
-                RefreshTokenLifetime = TimeSpan.FromHours(1)
-            };
-            _authSettingsMock.Setup(a => a.Value).Returns(_defaultAuthSettings);
-
-            _defaultEncryptionSettings = new EncryptionSettings
-            {
-                RefreshTokenSize = 32
-            };
-            _encryptionSettingsMock.Setup(e => e.Value).Returns(_defaultEncryptionSettings);
-        }
-
-        private JwtService CreateService()
+        _defaultAuthSettings = new AuthSettings
         {
-            return new JwtService(
-                _authSettingsMock.Object,
-                _encryptionSettingsMock.Object,
-                _loggerMock.Object,
-                _userRepoMock.Object,
-                _refreshTokenRepoMock.Object,
-                _hashServiceMock.Object,
-                _jwtSettings
-            );
-        }
+            AccessTokenLifetime = TimeSpan.FromMinutes(15),
+            RefreshTokenLifetime = TimeSpan.FromHours(1)
+        };
+        _authSettingsMock.Setup(a => a.Value).Returns(_defaultAuthSettings);
 
-        private string GenerateTestJwtTokenString(int userId, string email, UserRole role, DateTime expiryTime, string key, string issuer, string audience)
+        _defaultEncryptionSettings = new EncryptionSettings
         {
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.Name, email),
-                new(ClaimTypes.NameIdentifier, userId.ToString()),
-                new(ClaimTypes.Role, role.ToString())
-            };
+            RefreshTokenSize = 32
+        };
+        _encryptionSettingsMock.Setup(e => e.Value).Returns(_defaultEncryptionSettings);
+    }
 
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+    private JwtService CreateService()
+    {
+        return new JwtService(
+            _authSettingsMock.Object,
+            _encryptionSettingsMock.Object,
+            _loggerMock.Object,
+            _userRepoMock.Object,
+            _refreshTokenRepoMock.Object,
+            _hashServiceMock.Object,
+            _jwtSettings
+        );
+    }
 
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: expiryTime,
-                signingCredentials: credentials);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
-        [Fact]
-        public async Task GenerateTokenAsync_UserNotFound_ThrowsArgumentException()
+    private string GenerateTestJwtTokenString(int userId, string email, UserRole role, DateTime expiryTime, string key,
+        string issuer, string audience)
+    {
+        var claims = new List<Claim>
         {
-            _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), default))
-                .ReturnsAsync((User)null);
-            var service = CreateService();
+            new(ClaimTypes.Name, email),
+            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.Role, role.ToString())
+        };
 
-            var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.GenerateTokensAsync("user@example.com", "password"));
-            Assert.Equal("Wrong email or password.", exception.Message);
-        }
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        [Fact]
-        public async Task GenerateTokenAsync_BannedUser_ThrowsAuthenticationException()
+        var token = new JwtSecurityToken(
+            issuer,
+            audience,
+            claims,
+            expires: expiryTime,
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    [Fact]
+    public async Task GenerateTokenAsync_UserNotFound_ThrowsArgumentException()
+    {
+        _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
+            .ReturnsAsync((User)null);
+        var service = CreateService();
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.GenerateTokensAsync("user@example.com", "password"));
+        Assert.Equal("Wrong email or password.", exception.Message);
+    }
+
+    [Fact]
+    public async Task GenerateTokenAsync_BannedUser_ThrowsAuthenticationException()
+    {
+        var user = new User
         {
-            var user = new User { Id = 1, Email = "test@example.com", PasswordHash = "hash", BanStatus = BanStatus.CannotLogin, UserRole = UserRole.DefaultUser };
-            _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), default))
-                .ReturnsAsync(user);
-            var service = CreateService();
+            Id = 1, Email = "test@example.com", PasswordHash = "hash", BanStatus = BanStatus.CannotLogin,
+            UserRole = UserRole.DefaultUser
+        };
+        _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
+            .ReturnsAsync(user);
+        var service = CreateService();
 
-            var exception = await Assert.ThrowsAsync<AuthenticationException>(() =>
-                service.GenerateTokensAsync(user.Email, "password"));
-            Assert.Equal("The user is banned.", exception.Message);
-        }
+        var exception = await Assert.ThrowsAsync<AuthenticationException>(() =>
+            service.GenerateTokensAsync(user.Email, "password"));
+        Assert.Equal("The user is banned.", exception.Message);
+    }
 
-        [Fact]
-        public async Task GenerateTokenAsync_IncorrectPassword_ThrowsArgumentException()
+    [Fact]
+    public async Task GenerateTokenAsync_IncorrectPassword_ThrowsArgumentException()
+    {
+        var user = new User
         {
-            var user = new User { Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt", BanStatus = BanStatus.MessagesBanned, UserRole = UserRole.DefaultUser };
-            _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), default))
-                .ReturnsAsync(user);
-            _hashServiceMock.Setup(h => h.CheckPasswordAsync("wrongpassword", user.PasswordHash)).ReturnsAsync(false);
-            var service = CreateService();
+            Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt", BanStatus = BanStatus.MessagesBanned,
+            UserRole = UserRole.DefaultUser
+        };
+        _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
+            .ReturnsAsync(user);
+        _hashServiceMock.Setup(h => h.CheckPasswordAsync("wrongpassword", user.PasswordHash)).ReturnsAsync(false);
+        var service = CreateService();
 
-            var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.GenerateTokensAsync(user.Email, "wrongpassword"));
-            Assert.Equal("Wrong email or password.", exception.Message);
-        }
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.GenerateTokensAsync(user.Email, "wrongpassword"));
+        Assert.Equal("Wrong email or password.", exception.Message);
+    }
 
-        [Fact]
-        public async Task GenerateTokenAsync_ValidUser_ReturnsTokens()
+    [Fact]
+    public async Task GenerateTokenAsync_ValidUser_ReturnsTokens()
+    {
+        var user = new User
         {
-            var user = new User { Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt", BanStatus = BanStatus.LiveStreamsBanned, UserRole = UserRole.DefaultUser };
-            _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), default))
-                .ReturnsAsync(user);
-            _hashServiceMock.Setup(h => h.CheckPasswordAsync("password", user.PasswordHash)).ReturnsAsync(true);
-            _refreshTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<RefreshToken>(), default)).Returns(Task.CompletedTask);
-            _refreshTokenRepoMock.Setup(r => r.SaveChangesAsync(default)).Returns(Task.CompletedTask);
-            var service = CreateService();
+            Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt",
+            BanStatus = BanStatus.LiveStreamsBanned, UserRole = UserRole.DefaultUser
+        };
+        _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
+            .ReturnsAsync(user);
+        _hashServiceMock.Setup(h => h.CheckPasswordAsync("password", user.PasswordHash)).ReturnsAsync(true);
+        _refreshTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<RefreshToken>(), default)).Returns(Task.CompletedTask);
+        _refreshTokenRepoMock.Setup(r => r.SaveChangesAsync(default)).Returns(Task.CompletedTask);
+        var service = CreateService();
 
-            var (jwtToken, refreshToken) = await service.GenerateTokensAsync(user.Email, "password");
+        var (jwtToken, refreshToken) = await service.GenerateTokensAsync(user.Email, "password");
 
-            Assert.False(string.IsNullOrEmpty(jwtToken));
-            Assert.False(string.IsNullOrEmpty(refreshToken));
-            _refreshTokenRepoMock.Verify(r => r.AddAsync(It.IsAny<RefreshToken>(), default), Times.Once);
-            _refreshTokenRepoMock.Verify(r => r.SaveChangesAsync(default), Times.Once);
-        }
+        Assert.False(string.IsNullOrEmpty(jwtToken));
+        Assert.False(string.IsNullOrEmpty(refreshToken));
+        _refreshTokenRepoMock.Verify(r => r.AddAsync(It.IsAny<RefreshToken>(), default), Times.Once);
+        _refreshTokenRepoMock.Verify(r => r.SaveChangesAsync(default), Times.Once);
+    }
 
-        [Fact]
-        public async Task RefreshTokenAsync_InvalidJwtFormat_ThrowsException()
+    [Fact]
+    public async Task RefreshTokenAsync_InvalidJwtFormat_ThrowsException()
+    {
+        var service = CreateService();
+        var exception = await Assert.ThrowsAsync<Exception>(() =>
+            service.RefreshTokenAsync("invalid-jwt-format", "valid-refresh-token"));
+        Assert.Equal("Cannot read token.", exception.Message);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_JwtMissingIdClaim_ThrowsUnauthorizedAccessException()
+    {
+        var service = CreateService();
+        var tokenWithoutIdClaim = GenerateTestJwtTokenString(0, "test@example.com", UserRole.DefaultUser,
+                DateTime.UtcNow.AddMinutes(5), _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience)
+            .Replace($"\"{ClaimTypes.NameIdentifier}\":\"0\",", ""); // Crude way to remove, better to generate without
+
+        var claims = new List<Claim>
+            { new(ClaimTypes.Name, "test@example.com"), new(ClaimTypes.Role, UserRole.DefaultUser.ToString()) };
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        var tokenDescriptor = new JwtSecurityToken(
+            _jwtSettings.Issuer,
+            _jwtSettings.Audience,
+            claims, // No NameIdentifier
+            expires: DateTime.UtcNow.AddMinutes(5),
+            signingCredentials: credentials);
+        var jwtWithoutId = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
+
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            service.RefreshTokenAsync(jwtWithoutId, "valid-refresh-token"));
+        Assert.Equal("Invalid token.", exception.Message);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_UserNotFoundForJwtId_ThrowsUnauthorizedAccessException()
+    {
+        var service = CreateService();
+        var jwtForNonExistentUser = GenerateTestJwtTokenString(999, "test@example.com", UserRole.DefaultUser,
+            DateTime.UtcNow.AddMinutes(5), _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience);
+        _userRepoMock.Setup(r => r.GetByIdAsync(999, default, null)).ReturnsAsync((User)null);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            service.RefreshTokenAsync(jwtForNonExistentUser, "valid-refresh-token"));
+        Assert.Equal("Invalid token.", exception.Message);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_DbRefreshTokenNotFound_ThrowsUnauthorizedAccessException()
+    {
+        var user = new User
         {
-            var service = CreateService();
-            var exception = await Assert.ThrowsAsync<Exception>(() => service.RefreshTokenAsync("invalid-jwt-format", "valid-refresh-token"));
-            Assert.Equal("Cannot read token.", exception.Message);
-        }
+            Id = 1, Email = "test@example.com", PasswordHash = "pwd", UserRole = UserRole.DefaultUser,
+            BanStatus = BanStatus.LiveStreamsBanned
+        };
+        _userRepoMock.Setup(r => r.GetByIdAsync(user.Id, default, null)).ReturnsAsync(user);
+        _refreshTokenRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<RefreshToken, bool>>>(), default))
+            .ReturnsAsync((RefreshToken)null);
+        var service = CreateService();
+        var validJwt = GenerateTestJwtTokenString(user.Id, user.Email, user.UserRole, DateTime.UtcNow.AddMinutes(5),
+            _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience);
 
-        [Fact]
-        public async Task RefreshTokenAsync_JwtMissingIdClaim_ThrowsUnauthorizedAccessException()
+        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            service.RefreshTokenAsync(validJwt, "non-existent-db-refresh-token"));
+        Assert.Equal("Invalid token.", exception.Message);
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_DbRefreshTokenExpired_ThrowsUnauthorizedAccessException()
+    {
+        var user = new User
         {
-            var service = CreateService();
-            var tokenWithoutIdClaim = GenerateTestJwtTokenString(0, "test@example.com", UserRole.DefaultUser, DateTime.UtcNow.AddMinutes(5), _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience)
-                .Replace($"\"{ClaimTypes.NameIdentifier}\":\"0\",", ""); // Crude way to remove, better to generate without
-
-            var claims = new List<Claim> { new(ClaimTypes.Name, "test@example.com"), new(ClaimTypes.Role, UserRole.DefaultUser.ToString()) };
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            var tokenDescriptor = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims, // No NameIdentifier
-                expires: DateTime.UtcNow.AddMinutes(5),
-                signingCredentials: credentials);
-            var jwtWithoutId = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
-
-
-            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.RefreshTokenAsync(jwtWithoutId, "valid-refresh-token"));
-            Assert.Equal("Invalid token.", exception.Message);
-        }
-
-        [Fact]
-        public async Task RefreshTokenAsync_UserNotFoundForJwtId_ThrowsUnauthorizedAccessException()
+            Id = 1, Email = "test@example.com", PasswordHash = "pwd", UserRole = UserRole.DefaultUser,
+            BanStatus = BanStatus.OnDemandPublicationBanned
+        };
+        var expiredDbRefreshToken = new RefreshToken
         {
-            var service = CreateService();
-            var jwtForNonExistentUser = GenerateTestJwtTokenString(999, "test@example.com", UserRole.DefaultUser, DateTime.UtcNow.AddMinutes(5), _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience);
-            _userRepoMock.Setup(r => r.GetByIdAsync(999, default, null)).ReturnsAsync((User)null);
+            Token = "expiredRefreshToken", UserId = user.Id, ExpiresOnUtc = DateTime.UtcNow.AddHours(-1), User = user
+        }; // Expired
+        _userRepoMock.Setup(r => r.GetByIdAsync(user.Id, default, null)).ReturnsAsync(user);
+        _refreshTokenRepoMock
+            .Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<RefreshToken, bool>>>(), default))
+            .ReturnsAsync(expiredDbRefreshToken);
+        var service = CreateService();
+        var validJwt = GenerateTestJwtTokenString(user.Id, user.Email, user.UserRole, DateTime.UtcNow.AddMinutes(5),
+            _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience);
 
-            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.RefreshTokenAsync(jwtForNonExistentUser, "valid-refresh-token"));
-            Assert.Equal("Invalid token.", exception.Message);
-        }
-
-        [Fact]
-        public async Task RefreshTokenAsync_DbRefreshTokenNotFound_ThrowsUnauthorizedAccessException()
-        {
-            var user = new User { Id = 1, Email = "test@example.com", PasswordHash = "pwd", UserRole = UserRole.DefaultUser, BanStatus = BanStatus.LiveStreamsBanned };
-            _userRepoMock.Setup(r => r.GetByIdAsync(user.Id, default, null)).ReturnsAsync(user);
-            _refreshTokenRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<RefreshToken, bool>>>(), default))
-                .ReturnsAsync((RefreshToken)null);
-            var service = CreateService();
-            var validJwt = GenerateTestJwtTokenString(user.Id, user.Email, user.UserRole, DateTime.UtcNow.AddMinutes(5), _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience);
-
-            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.RefreshTokenAsync(validJwt, "non-existent-db-refresh-token"));
-            Assert.Equal("Invalid token.", exception.Message);
-        }
-
-        [Fact]
-        public async Task RefreshTokenAsync_DbRefreshTokenExpired_ThrowsUnauthorizedAccessException()
-        {
-            var user = new User { Id = 1, Email = "test@example.com", PasswordHash = "pwd", UserRole = UserRole.DefaultUser, BanStatus = BanStatus.OnDemandPublicationBanned };
-            var expiredDbRefreshToken = new RefreshToken { Token = "expiredRefreshToken", UserId = user.Id, ExpiresOnUtc = DateTime.UtcNow.AddHours(-1), User = user }; // Expired
-            _userRepoMock.Setup(r => r.GetByIdAsync(user.Id, default, null)).ReturnsAsync(user);
-            _refreshTokenRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<RefreshToken, bool>>>(), default))
-                .ReturnsAsync(expiredDbRefreshToken);
-            var service = CreateService();
-            var validJwt = GenerateTestJwtTokenString(user.Id, user.Email, user.UserRole, DateTime.UtcNow.AddMinutes(5), _jwtSettings.Key, _jwtSettings.Issuer, _jwtSettings.Audience);
-
-            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.RefreshTokenAsync(validJwt, "expiredRefreshToken"));
-            Assert.Equal("Invalid token.", exception.Message);
-        }
+        var exception =
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                service.RefreshTokenAsync(validJwt, "expiredRefreshToken"));
+        Assert.Equal("Invalid token.", exception.Message);
     }
 }

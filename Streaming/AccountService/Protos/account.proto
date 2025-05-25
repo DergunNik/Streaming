@@ -3,28 +3,46 @@ syntax = "proto3";
 option csharp_namespace = "Account";
 
 import "google/protobuf/empty.proto";
-//import "google/api/annotations.proto";proto
+import "google/api/annotations.proto";
 
 package account;
 
 service AccountService {
-  rpc GetAccount(GetAccountRequest) returns (GetAccountReply);
-  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountReply);
-  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountReply);
-  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsReply);
-  rpc SetBanStatus(AccountBanRequest) returns (google.protobuf.Empty);
+  rpc GetAccount(GetAccountRequest) returns (GetAccountReply) {
+    option (google.api.http) = {
+      get: "/accounts/{user_id}"
+    };
+  }
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountReply) {
+    option (google.api.http) = {
+      post: "/accounts"
+      body: "info"
+    };
+  }
+  rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountReply) {
+    option (google.api.http) = {
+      patch: "/accounts"
+      body: "info"
+    };
+  }
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsReply) {
+    option (google.api.http) = {
+      get: "/accounts"
+      additional_bindings {
+        get: "/accounts/list"
+      }
+    };
+  }
+  rpc SetBanStatus(AccountBanRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/accounts/{user_id}/ban"
+      body: "*"
+    };
+  }
 }
 
-message ans {
-  string s = 1;
-}
-
-message GetAccountRequest {
-  int32 user_id = 1;
-}
 
 message SetAccountInfo {
-  int32 user_id = 1;
   optional bytes avatar_image = 2;
   optional bytes background_image = 3;
   optional string description = 4;
@@ -36,6 +54,10 @@ message AccountInfo {
   optional string background_public_id = 3;
   optional string description = 4;
   bool is_banned = 5;
+}
+
+message GetAccountRequest {
+  int32 user_id = 1;
 }
 
 message GetAccountReply {

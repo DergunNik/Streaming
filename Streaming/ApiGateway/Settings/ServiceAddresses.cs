@@ -10,8 +10,15 @@ public class ServiceConfig
     public string Host { get; set; }
     public string Port { get; set; }
 
-    public string GetHttpUrl() => BuildUri("http", Port);
-    public string GetGrpcUrl() => BuildUri("http", Port);
+    public string GetHttpUrl()
+    {
+        return BuildUri("http", Port);
+    }
+
+    public string GetGrpcUrl()
+    {
+        return BuildUri("http", Port);
+    }
 
     private string BuildUri(string scheme, string port)
     {

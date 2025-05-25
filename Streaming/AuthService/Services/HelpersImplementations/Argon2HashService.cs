@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using AuthService.Service.HelpersInterfaces;
+using AuthService.Services.HelpersInterfaces;
 using Konscious.Security.Cryptography;
 
-namespace AuthService.Service.HelpersImplementations;
+namespace AuthService.Services.HelpersImplementations;
 
 public class Argon2HashService : IHashService
 {

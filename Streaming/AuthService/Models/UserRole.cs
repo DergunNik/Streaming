@@ -3,5 +3,6 @@
 public enum UserRole : byte
 {
     DefaultUser,
-    Admin
+    Admin,
+    InnerService
 }

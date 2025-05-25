@@ -1,4 +1,4 @@
-﻿namespace AuthService.Service.HelpersInterfaces;
+﻿namespace AuthService.Services.HelpersInterfaces;
 
 public interface IHashService
 {

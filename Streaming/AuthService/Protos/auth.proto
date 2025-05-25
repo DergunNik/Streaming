@@ -2,17 +2,43 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
 
 option csharp_namespace = "AuthServerApp";
 
 package auth;
 
 service AuthService {
-  rpc BeginRegistration (RegisterRequest) returns (google.protobuf.Empty);
-  rpc FinishRegistration (FinishRequest) returns (google.protobuf.Empty);
-  rpc Login (LoginRequest) returns (LoginReply);
-  rpc Refresh (RefreshRequest) returns (LoginReply);
-  rpc Logout (LogoutRequest) returns (google.protobuf.Empty);
+  rpc BeginRegistration (RegisterRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/auth/register/begin"
+      body: "*"
+    };
+  }
+  rpc FinishRegistration (FinishRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/auth/register/finish"
+      body: "*"
+    };
+  }
+  rpc Login (LoginRequest) returns (LoginReply) {
+    option (google.api.http) = {
+      post: "/auth/login"
+      body: "*"
+    };
+  }
+  rpc Refresh (RefreshRequest) returns (LoginReply) {
+    option (google.api.http) = {
+      post: "/auth/refresh"
+      body: "*"
+    };
+  }
+  rpc Logout (google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/auth/logout"
+      body: "*"
+    };
+  }
 }
 
 message RegisterRequest {
@@ -40,8 +66,4 @@ message LoginReply {
 message RefreshRequest {
   string jwtToken = 1;
   string refreshToken = 2;
-}
-
-message LogoutRequest {
-  string email = 1;
 }

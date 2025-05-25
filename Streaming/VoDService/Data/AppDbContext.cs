@@ -8,11 +8,11 @@ namespace VoDService.Data;
 
 public class AppDbContext : DbContext
 {
-    private readonly string _connectionString;
     private readonly CloudinaryRestrictions _cloudinaryRestrictions;
+    private readonly string _connectionString;
 
     public AppDbContext(
-        DbContextOptions<AppDbContext> options, 
+        DbContextOptions<AppDbContext> options,
         IOptions<CloudinaryRestrictions> cloudinarySettings,
         IOptions<DbCredentials> dbCredentials)
         : base(options)
@@ -27,9 +27,7 @@ public class AppDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured && !string.IsNullOrEmpty(_connectionString))
-        {
             optionsBuilder.UseNpgsql(_connectionString);
-        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

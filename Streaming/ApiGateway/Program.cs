@@ -21,42 +21,45 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-var jwtKey = builder.Configuration["JwtSettings:Key"];
-var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-
-builder.Services
-    .AddAuthentication(options =>
+builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
     })
     .AddJwtBearer(options =>
     {
+        var jwtKey = builder.Configuration["JwtSettings:Key"];
+        var jwtIssuer = builder.Configuration["JwtSettings:Issuer"];
+        var jwtAudience = builder.Configuration["JwtSettings:Audience"];
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+
+            ValidateLifetime = true,
+
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = signingKey,
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ClockSkew = TimeSpan.Zero 
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+
+            ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
+
+builder.Services.AddAuthorization();
 
 builder.Services.Configure<ServiceAddresses>(builder.Configuration.GetSection("ServiceAddresses"));
 var serviceAddresses = builder.Configuration.GetSection("ServiceAddresses").Get<ServiceAddresses>();
 
-builder.Services.AddAuthorizationBuilder()
-    .SetDefaultPolicy(new AuthorizationPolicyBuilder(JwtBearerDefaults.AuthenticationScheme)
-        .RequireAuthenticatedUser().Build())
-    .AddPolicy("AdminOnly", policy =>
-        policy.RequireAuthenticatedUser().RequireRole("Admin"));
-
 builder.Services.AddControllers();
-
 builder.Services.AddHealthChecks()
     .AddUrlGroup(
         new Uri(serviceAddresses.AuthService.GetHttpUrl() + "/health/live"),
-        name: "auth-service",
+        "auth-service",
         tags: ["ready"]);
 
 

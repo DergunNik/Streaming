@@ -4,10 +4,17 @@ public class EmailServiceAddress
 {
     public string Host { get; set; }
     public string Port { get; set; }
-    
-    public string GetEmailHttpUrl() => BuildUri("http", Port);
-    public string GetEmailGrpcUrl() => BuildUri("http", Port);
-    
+
+    public string GetEmailHttpUrl()
+    {
+        return BuildUri("http", Port);
+    }
+
+    public string GetEmailGrpcUrl()
+    {
+        return BuildUri("http", Port);
+    }
+
     private string BuildUri(string scheme, string port)
     {
         var builder = new UriBuilder { Scheme = scheme, Host = Host.Trim() };

@@ -13,13 +13,14 @@ public class CloudinaryHealthCheck : IHealthCheck
         _cloudinary = cloudinary;
     }
 
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             var result = await _cloudinary.PingAsync(cancellationToken);
-            return result.StatusCode == HttpStatusCode.OK 
-                ? HealthCheckResult.Healthy() 
+            return result.StatusCode == HttpStatusCode.OK
+                ? HealthCheckResult.Healthy()
                 : HealthCheckResult.Unhealthy();
         }
         catch

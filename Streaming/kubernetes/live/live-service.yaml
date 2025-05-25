@@ -65,6 +65,21 @@ spec:
                 configMapKeyRef:
                   name: redis-config
                   key: connection-string
+            - name: JwtSettings__Key
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret.yaml
+                  key: jwt-key
+            - name: JwtSettings__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: jwt-config.yaml
+                  key: issuer
+            - name: JwtSettings__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: jwt-secret.yaml
+                  key: audience
           livenessProbe:
             httpGet:
               path: /health/live

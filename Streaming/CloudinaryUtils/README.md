@@ -93,7 +93,8 @@ public class CloudinarySettings
 
 ## Health Check
 
-The health check will attempt to contact Cloudinary using your credentials and report the status through ASP.NET Core Health Checks infrastructure.
+The health check will attempt to contact Cloudinary using your credentials and report the status through ASP.NET Core
+Health Checks infrastructure.
 
 ---
 

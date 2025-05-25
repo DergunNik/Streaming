@@ -5,6 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <IncludeHttpRuleProtos>true</IncludeHttpRuleProtos>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,23 +13,23 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CloudinaryDotNet" Version="1.27.5" />
-        <PackageReference Include="CloudinaryUtils" Version="1.0.0" />
+        <PackageReference Include="CloudinaryDotNet" Version="1.27.5"/>
+        <PackageReference Include="CloudinaryUtils" Version="1.0.0"/>
         <PackageReference Include="Grpc.AspNetCore" Version="2.57.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.15" />
-        <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="8.0.16" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.5" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="8.0.16" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.16" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.16" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.15"/>
+        <PackageReference Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" Version="8.0.16"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="8.0.16"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.16"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.16"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
+        <Content Include="..\.dockerignore">
+            <Link>.dockerignore</Link>
+        </Content>
     </ItemGroup>
 
 </Project>

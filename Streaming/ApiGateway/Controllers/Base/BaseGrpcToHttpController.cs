@@ -11,11 +11,12 @@ public abstract class BaseGrpcToHttpController : ControllerBase
     {
         _logger = logger;
     }
-    
+
     protected IActionResult HandleRpcException(RpcException ex, string operationName)
     {
-        _logger.LogError(ex, "Gateway: RpcException during {Operation}: {StatusCode} - {Detail}", operationName, ex.StatusCode, ex.Status.Detail);
-        
+        _logger.LogError(ex, "Gateway: RpcException during {Operation}: {StatusCode} - {Detail}", operationName,
+            ex.StatusCode, ex.Status.Detail);
+
         var problemDetails = new ProblemDetails
         {
             Instance = HttpContext.Request.Path
@@ -51,25 +52,26 @@ public abstract class BaseGrpcToHttpController : ControllerBase
             case Grpc.Core.StatusCode.Internal:
                 problemDetails.Title = "AuthTests service internal error.";
                 problemDetails.Status = StatusCodes.Status500InternalServerError;
-                problemDetails.Detail = "An internal error occurred in the authentication service. Please try again later.";
+                problemDetails.Detail =
+                    "An internal error occurred in the authentication service. Please try again later.";
                 break;
             default:
                 problemDetails.Title = "Error communicating with auth service.";
                 problemDetails.Status = StatusCodes.Status502BadGateway;
-                problemDetails.Detail = $"The authentication service returned an unexpected error (Code: {ex.StatusCode}).";
+                problemDetails.Detail =
+                    $"The authentication service returned an unexpected error (Code: {ex.StatusCode}).";
                 break;
         }
+
         return new ObjectResult(problemDetails) { StatusCode = problemDetails.Status };
     }
-    
-    protected IActionResult HandleUnexpectedError(Exception ex, string operationName, string? contextualInfoForLog = null)
+
+    protected IActionResult HandleUnexpectedError(Exception ex, string operationName,
+        string? contextualInfoForLog = null)
     {
         var logMessage = $"Gateway: Unexpected error during {operationName}";
-        if (!string.IsNullOrEmpty(contextualInfoForLog))
-        {
-            logMessage += $" (Context: {contextualInfoForLog})";
-        }
-            
+        if (!string.IsNullOrEmpty(contextualInfoForLog)) logMessage += $" (Context: {contextualInfoForLog})";
+
         _logger.LogError(ex, "{LogMessage}", logMessage);
 
         var problemDetails = new ProblemDetails

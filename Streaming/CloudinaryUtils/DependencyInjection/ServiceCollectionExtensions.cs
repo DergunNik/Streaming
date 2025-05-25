@@ -3,18 +3,17 @@ using CloudinaryUtils.HealthChecks;
 using CloudinaryUtils.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace CloudinaryUtils.DependencyInjection;
 
 /// <summary>
-/// Extension methods for registering Cloudinary and related health checks in the DI container.
+///     Extension methods for registering Cloudinary and related health checks in the DI container.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers Cloudinary as a singleton in the DI container using settings from the configuration section.
+    ///     Registers Cloudinary as a singleton in the DI container using settings from the configuration section.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -40,7 +39,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Adds a Cloudinary health check to the health check builder.
+    ///     Adds a Cloudinary health check to the health check builder.
     /// </summary>
     /// <param name="builder">The health checks builder (e.g., services.AddHealthChecks()).</param>
     /// <param name="name">The name for the health check (default: "cloudinary").</param>
@@ -52,13 +51,9 @@ public static class ServiceCollectionExtensions
         params string[] tags)
     {
         if (tags is { Length: > 0 })
-        {
             builder.AddCheck<CloudinaryHealthCheck>(name, tags: tags);
-        }
         else
-        {
             builder.AddCheck<CloudinaryHealthCheck>(name);
-        }
         return builder;
     }
 }

@@ -1,4 +1,4 @@
-﻿using AuthService.Service.HelpersImplementations;
+﻿using AuthService.Services.HelpersImplementations;
 
 namespace AuthTests;
 
@@ -10,7 +10,7 @@ public class Argon2HashServiceTests
         const string password = "TestPassword";
         var salt = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         var service = new Argon2HashService();
-        
+
         var hash = await service.HashAsync(password, salt);
 
         Assert.Contains("-", hash);
@@ -27,7 +27,7 @@ public class Argon2HashServiceTests
         var hashAndSalt = await service.HashAsync(password, salt);
 
         var result = await service.CheckPasswordAsync(password, hashAndSalt);
-        
+
         Assert.True(result);
     }
 
