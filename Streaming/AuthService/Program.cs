@@ -70,11 +70,7 @@ builder.Services
     .AddScoped<IHashService, Argon2HashService>();
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>(tags: ["ready"])
-    .AddUrlGroup(
-        new Uri(emailConfig.GetEmailHttpUrl() + "/health/live"),
-        "EmailService",
-        tags: ["ready"]);
+    .AddDbContextCheck<AppDbContext>(tags: ["ready"]);
 
 var app = builder.Build();
 

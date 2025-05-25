@@ -93,7 +93,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: acc-svc-service
+  name: acc-svc
 spec:
   selector:
     app: acc-svc-lbl

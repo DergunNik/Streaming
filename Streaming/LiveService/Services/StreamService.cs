@@ -19,25 +19,25 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
 {
     private readonly AppDbContext _db;
     private readonly HttpClient _httpClient;
-    private readonly CloudinarySettings _settings;
     private readonly IHttpContextAccessor _httpContextAccessor;
-
-    private string BaseUrl => $"https://api.cloudinary.com/v2/video/{_settings.CloudName}";
+    private readonly CloudinarySettings _settings;
 
     public StreamService(
-        IOptions<CloudinarySettings> cloudinarySettings, 
-        AppDbContext dbContext, 
+        IOptions<CloudinarySettings> cloudinarySettings,
+        AppDbContext dbContext,
         IHttpContextAccessor httpContextAccessor)
     {
         _settings = cloudinarySettings.Value;
         _httpClient = new HttpClient();
         _db = dbContext;
         _httpContextAccessor = httpContextAccessor;
-        
+
         var byteArray = Encoding.ASCII.GetBytes($"{_settings.ApiKey}:{_settings.ApiSecret}");
         _httpClient.DefaultRequestHeaders.Authorization
             = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
     }
+
+    private string BaseUrl => $"https://api.cloudinary.com/v2/video/{_settings.CloudName}";
 
     [Authorize]
     public override async Task<StreamDetailedReply> CreateStream(CreateStreamRequest request, ServerCallContext context)
@@ -53,9 +53,9 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
         {
             Content = new StringContent(JsonSerializer.Serialize(bodyObj), Encoding.UTF8, "application/json")
         };
-        
+
         var response = await _httpClient.SendAsync(httpRequest);
-        
+
         var (id, name, status, createdAt, updatedAt, data) = await ParseStreamData(response);
         var archivePublicId = ExtractArchivePublicId(data);
         var userId = GetUserId();
@@ -68,7 +68,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
         };
         await _db.Streams.AddAsync(newStream);
         await _db.SaveChangesAsync();
-        
+
         var reply = new StreamDetailedReply
         {
             CloudinaryStreamId = id,
@@ -102,7 +102,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
         };
         return reply;
     }
-    
+
     [Authorize]
     public override async Task<StreamDetailedReply> UpdateStream(UpdateStreamRequest request, ServerCallContext context)
     {
@@ -140,7 +140,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
             UpdatedAt = Timestamp.FromDateTime(updatedAt)
         };
     }
-    
+
     [Authorize]
     public override async Task<Empty> DeleteStream(DeleteStreamRequest request, ServerCallContext context)
     {
@@ -262,7 +262,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
 
         return outputInfo;
     }
-    
+
     [Authorize]
     public override async Task<StreamOutputInfo> UpdateStreamOutput(UpdateStreamOutputRequest request,
         ServerCallContext context)
@@ -440,17 +440,16 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
         if (info is null) throw new RpcException(new Status(StatusCode.NotFound, "Stream not found"));
 
         var httpContext = _httpContextAccessor.HttpContext;
-        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
+        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
                                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated")));
-        var role = httpContext?.User?.FindFirst(ClaimTypes.Role)?.Value ?? 
+        var role = httpContext?.User?.FindFirst(ClaimTypes.Role)?.Value ??
                    throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated"));
-        
-        if (role is "Admin" or "InnerService") {return info.AuthorId;}
+
+        if (role is "Admin" or "InnerService") return info.AuthorId;
 
         if (userId != info.AuthorId)
-        {
-            throw new RpcException(new Status(StatusCode.PermissionDenied, "You do not have permission to manage this stream"));
-        }
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "You do not have permission to manage this stream"));
 
         return info.AuthorId;
     }
@@ -494,7 +493,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
 
         return archivePublicId;
     }
-    
+
     private async Task<int?> GetAuthorIdAsync(string streamId)
     {
         var info = await _db.Streams.FirstOrDefaultAsync(e => e.CloudinaryStreamId == streamId);
@@ -504,7 +503,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
     private int GetUserId()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
+        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
                                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated")));
         return userId;
     }

@@ -12,71 +12,71 @@ service StreamService {
   // for author
   rpc CreateStream (CreateStreamRequest) returns (StreamDetailedReply) {
     option (google.api.http) = {
-      post: "/streams"
+      post: "/live"
       body: "*"
     };
   }
   rpc GetStream (GetStreamRequest) returns (StreamDetailedReply) {
     option (google.api.http) = {
-      get: "/streams/{cloudinary_stream_id}"
+      get: "/live/{cloudinary_stream_id}"
     };
   }
   rpc UpdateStream (UpdateStreamRequest) returns (StreamDetailedReply) {
     option (google.api.http) = {
-      patch: "/streams/{cloudinary_stream_id}"
+      patch: "/live/{cloudinary_stream_id}"
       body: "*"
     };
   }
   rpc DeleteStream (DeleteStreamRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/streams/{cloudinary_stream_id}"
+      delete: "/live/{cloudinary_stream_id}"
       body: "*"
     };
   }
   rpc ActivateStream (StreamActionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/streams/{cloudinary_stream_id}:activate"
+      post: "/live/{cloudinary_stream_id}:activate"
       body: "*"
     };
   }
   rpc IdleStream (StreamActionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/streams/{cloudinary_stream_id}:idle"
+      post: "/live/{cloudinary_stream_id}:idle"
       body: "*"
     };
   }
   rpc ListStreamOutputs (ListStreamOutputsRequest) returns (ListStreamOutputsReply) {
     option (google.api.http) = {
-      get: "/streams/{cloudinary_stream_id}/outputs"
+      get: "/live/{cloudinary_stream_id}/outputs"
     };
   }
   rpc AddStreamOutput (AddStreamOutputRequest) returns (StreamOutputInfo) {
     option (google.api.http) = {
-      post: "/streams/{cloudinary_stream_id}/outputs"
+      post: "/live/{cloudinary_stream_id}/outputs"
       body: "*"
     };
   }
   rpc UpdateStreamOutput (UpdateStreamOutputRequest) returns (StreamOutputInfo) {
     option (google.api.http) = {
-      patch: "/streams/{cloudinary_stream_id}/outputs/{output_id}"
+      patch: "/live/{cloudinary_stream_id}/outputs/{output_id}"
       body: "*"
     };
   }
   rpc DeleteStreamOutput (DeleteStreamOutputRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/streams/{cloudinary_stream_id}/outputs/{output_id}"
+      delete: "/live/{cloudinary_stream_id}/outputs/{output_id}"
       body: "*"
     };
   }
   // for user
   rpc GetStreamInfo (GetStreamInfoRequest) returns (GetStreamInfoReply) {
     option (google.api.http) = {
-      get: "/streams/{cloudinary_stream_id}/info"
+      get: "/live/{cloudinary_stream_id}/info"
     };
   }
   rpc ListStreams (ListStreamsRequest) returns (ListStreamsReply) {
     option (google.api.http) = {
-      get: "/streams"
+      get: "/live"
     };
   }
 }

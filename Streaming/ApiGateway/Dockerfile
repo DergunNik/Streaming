@@ -5,9 +5,17 @@ EXPOSE 5000
 
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV JwtSettings__Key=""
+ENV JwtSettings__Issuer=""
+ENV JwtSettings__Audience=""
 ENV ServiceAddresses__AuthService__Host=""
-ENV ServiceAddresses__AuthService__HttpPort=""
-ENV ServiceAddresses__AuthService__GrpcPort=""
+ENV ServiceAddresses__AuthService__Port=""
+ENV ServiceAddresses__VodService__Host=""
+ENV ServiceAddresses__VodService__Port=""
+ENV ServiceAddresses__AccService__Host=""
+ENV ServiceAddresses__AccService__Port=""
+ENV ServiceAddresses__LiveService__Host=""
+ENV ServiceAddresses__LiveService__Port=""
+
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src

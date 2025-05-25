@@ -26,17 +26,12 @@ public class JwtService(
     {
         logger.LogInformation($"Checking user {email} for jwt token.");
         var user = await userRepository.FirstOrDefaultAsync(u => u.Email == email)
-            ?? throw new ArgumentException("Wrong email or password.");
+                   ?? throw new ArgumentException("Wrong email or password.");
 
-        if (user.IsBanned)
-        {
-            throw new AuthenticationException("The user is banned.");
-        }
+        if (user.IsBanned) throw new AuthenticationException("The user is banned.");
 
         if (!await hashService.CheckPasswordAsync(password, user.PasswordHash))
-        {
             throw new ArgumentException("Wrong email or password.");
-        }
 
         var jwtToken = GenerateJwtToken(email, user.Id, user.UserRole);
         var refreshToken = await GenerateRefreshTokenAsync(user, encryptionSettings.Value.RefreshTokenSize);
@@ -48,7 +43,7 @@ public class JwtService(
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
-        if (!tokenHandler.CanReadToken(jwtToken)) { throw new Exception("Cannot read token."); }
+        if (!tokenHandler.CanReadToken(jwtToken)) throw new Exception("Cannot read token.");
 
         var validationParameters = new TokenValidationParameters
         {
@@ -67,11 +62,11 @@ public class JwtService(
                 throw new SecurityTokenException("Wrong token type.");
 
             var idClaim = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)
-                ?? throw new SecurityTokenException("Wrong token claims.");
+                          ?? throw new SecurityTokenException("Wrong token claims.");
 
             var userId = int.Parse(idClaim.Value);
             user = await userRepository.GetByIdAsync(userId)
-                ?? throw new SecurityTokenException("Invalid user id.");
+                   ?? throw new SecurityTokenException("Invalid user id.");
 
             var dbRefreshToken = await refreshTokenRepository.FirstOrDefaultAsync(
                 t => t.UserId == user.Id && t.Token == refreshToken);

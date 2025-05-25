@@ -98,7 +98,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: live-svc-service
+  name: live-svc
 spec:
   selector:
     app: live-svc-lbl

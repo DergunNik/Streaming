@@ -30,7 +30,7 @@ service VideoService {
   }
   rpc GetVideosOfUser(GetVideosOfUserRequest) returns (GetVideosOfUserReply) {
     option (google.api.http) = {
-      get: "/users/{user_id}/videos"
+      get: "/videos/user/{user_id}"
     };
   }
   rpc SetReaction(SetReactionRequest) returns (SetReactionReply) {

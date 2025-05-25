@@ -3,6 +3,9 @@
 public class ServiceAddresses
 {
     public ServiceConfig AuthService { get; set; } = new();
+    public ServiceConfig VodService { get; set; } = new();
+    public ServiceConfig LiveService { get; set; } = new();
+    public ServiceConfig AccService { get; set; } = new();
 }
 
 public class ServiceConfig
@@ -11,11 +14,6 @@ public class ServiceConfig
     public string Port { get; set; }
 
     public string GetHttpUrl()
-    {
-        return BuildUri("http", Port);
-    }
-
-    public string GetGrpcUrl()
     {
         return BuildUri("http", Port);
     }

@@ -260,10 +260,9 @@ public class VideoService : VoD.VideoService.VideoServiceBase
         var authorId = await GetAuthorIdFromCloudinary(request.PublicId);
 
         if (authorId != userId && userRole == "DefaultUser")
-        {
-            throw new RpcException(new Status(StatusCode.PermissionDenied, "You do not have permission to delete this video."));
-        }
-        
+            throw new RpcException(new Status(StatusCode.PermissionDenied,
+                "You do not have permission to delete this video."));
+
         var deletionParams = new DeletionParams(request.PublicId)
         {
             ResourceType = ResourceType.Video,
@@ -271,11 +270,11 @@ public class VideoService : VoD.VideoService.VideoServiceBase
         };
 
         await _cloudinary.DestroyAsync(deletionParams);
-        
+
         await using var tx = await _dbContext.Database.BeginTransactionAsync();
         var video = await _dbContext.Videos.FirstOrDefaultAsync(e => e.PublicId == request.PublicId,
             context.CancellationToken);
-        
+
         if (video is not null)
         {
             _dbContext.Videos.Remove(video);
@@ -285,23 +284,23 @@ public class VideoService : VoD.VideoService.VideoServiceBase
 
         return new Empty();
     }
-    
+
     private int GetUserId()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? 
+        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
                                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated")));
         return userId;
     }
-    
+
     private string GetUserRole()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        var role = httpContext?.User?.FindFirst(ClaimTypes.Role)?.Value ?? 
-                               throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated"));
+        var role = httpContext?.User?.FindFirst(ClaimTypes.Role)?.Value ??
+                   throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated"));
         return role;
     }
-    
+
     private async Task<int> GetAuthorIdFromCloudinary(string publicId)
     {
         var resource = await _cloudinary.GetResourceAsync(new GetResourceParams(publicId)
@@ -311,9 +310,7 @@ public class VideoService : VoD.VideoService.VideoServiceBase
         if (resource.ImageMetadata != null &&
             resource.ImageMetadata.TryGetValue("author", out var authorIdStr) &&
             int.TryParse(authorIdStr, out var authorId))
-        {
             return authorId;
-        }
         throw new RpcException(new Status(StatusCode.NotFound, "Author not found in video metadata"));
     }
 }

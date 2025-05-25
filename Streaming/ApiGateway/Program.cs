@@ -1,14 +1,9 @@
 using System.Text;
 using ApiGateway.Settings;
-using AuthClientApp;
-using Grpc.Core;
-using Grpc.Net.Client.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using ServiceConfig = Grpc.Net.Client.Configuration.ServiceConfig;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,30 +47,14 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-builder.Services.Configure<ServiceAddresses>(builder.Configuration.GetSection("ServiceAddresses"));
-var serviceAddresses = builder.Configuration.GetSection("ServiceAddresses").Get<ServiceAddresses>();
+builder.Services.Configure<ServiceAddresses>(builder.Configuration);
 
 builder.Services.AddControllers();
-builder.Services.AddHealthChecks()
-    .AddUrlGroup(
-        new Uri(serviceAddresses.AuthService.GetHttpUrl() + "/health/live"),
-        "auth-service",
-        tags: ["ready"]);
-
-
-builder.Services
-    .AddGrpcClient<AuthService.AuthServiceClient>(options =>
-    {
-        options.Address = new Uri(serviceAddresses.AuthService.GetGrpcUrl());
-    })
-    .ConfigureChannel(o =>
-    {
-        o.ServiceConfig = new ServiceConfig { LoadBalancingConfigs = { new RoundRobinConfig() } };
-        o.Credentials = ChannelCredentials.Insecure;
-    });
+builder.Services.AddHealthChecks();
 
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
 
 var app = builder.Build();
 
@@ -86,7 +65,6 @@ app.UseHttpsRedirection()
     .UseAuthorization();
 
 app.MapReverseProxy();
-app.MapControllers();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
@@ -94,7 +72,7 @@ app.MapHealthChecks("/health/live", new HealthCheckOptions
 });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
-    Predicate = hc => hc.Tags.Contains("ready")
+    Predicate = _ => false
 });
 
 app.Run();

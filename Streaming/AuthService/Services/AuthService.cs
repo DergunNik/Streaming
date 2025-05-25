@@ -22,12 +22,12 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
     private readonly EmailService.EmailServiceClient _emailServiceClient;
     private readonly IOptions<EncryptionSettings> _encryptionOptions;
     private readonly IHashService _hashService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IJwtService _jwtService;
     private readonly ILogger<JwtService> _logger;
     private readonly IRepository<RefreshToken> _refreshTokensRepository;
     private readonly IRepository<UserRegRequest> _requestsRepository;
     private readonly IRepository<User> _usersRepository;
-    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthService(
         ILogger<JwtService> logger,
@@ -188,8 +188,8 @@ public class AuthService : AuthServerApp.AuthService.AuthServiceBase
     {
         var httpContext = _httpContextAccessor.HttpContext;
         var id = int.Parse(httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? throw new RpcException(new Status(StatusCode.Unauthenticated, "No user id provided.")));
-        
+                           ?? throw new RpcException(new Status(StatusCode.Unauthenticated, "No user id provided.")));
+
         var user = await _usersRepository.FirstOrDefaultAsync(u => u.Id == id, context.CancellationToken)
                    ?? throw new RpcException(new Status(StatusCode.NotFound, "User not found"));
 

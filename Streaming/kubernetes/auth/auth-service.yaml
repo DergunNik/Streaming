@@ -88,7 +88,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth-svc-service
+  name: auth-svc
 spec:
   selector:
     app: auth-svc-lbl

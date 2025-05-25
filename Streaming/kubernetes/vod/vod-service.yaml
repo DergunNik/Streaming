@@ -93,7 +93,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vod-svc-service
+  name: vod-svc
 spec:
   selector:
     app: vod-svc-lbl

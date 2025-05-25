@@ -17,13 +17,13 @@ public class AccountService : Account.AccountService.AccountServiceBase
 {
     private readonly Cloudinary _cloudinary;
     private readonly AppDbContext _dbContext;
-    private readonly ContentRestrictions _restrictions;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ContentRestrictions _restrictions;
 
     public AccountService(
-        AppDbContext dbContext, 
-        Cloudinary cloudinary, 
-        IOptions<ContentRestrictions> restrictions, 
+        AppDbContext dbContext,
+        Cloudinary cloudinary,
+        IOptions<ContentRestrictions> restrictions,
         IHttpContextAccessor httpContextAccessor)
     {
         _dbContext = dbContext;
@@ -75,15 +75,10 @@ public class AccountService : Account.AccountService.AccountServiceBase
         var info = request.Info;
         var (userId, role) = GetIdAndRole();
 
-        if (role == "InnerService")
-        {
-            throw new RpcException(new Status(StatusCode.Unimplemented, "Bad role provided"));
-        }
+        if (role == "InnerService") throw new RpcException(new Status(StatusCode.Unimplemented, "Bad role provided"));
 
         if (await _dbContext.Accounts.AnyAsync(a => a.UserId == userId, context.CancellationToken))
-        {
             throw new RpcException(new Status(StatusCode.AlreadyExists, "Account already exists"));
-        }
 
         var (avatarPublicId, backgroundPublicId, description) = await ProcessAndValidateAccountInfo(info);
 
@@ -111,11 +106,8 @@ public class AccountService : Account.AccountService.AccountServiceBase
         var info = request.Info;
         var (userId, role) = GetIdAndRole();
 
-        if (role == "InnerService")
-        {
-            throw new RpcException(new Status(StatusCode.Unimplemented, "Bad role provided"));
-        }        
-        
+        if (role == "InnerService") throw new RpcException(new Status(StatusCode.Unimplemented, "Bad role provided"));
+
         var account = await _dbContext.Accounts.FirstOrDefaultAsync(a => a.UserId == userId, context.CancellationToken);
         if (account is null) throw new RpcException(new Status(StatusCode.NotFound, $"User {userId} not found"));
 
@@ -152,7 +144,7 @@ public class AccountService : Account.AccountService.AccountServiceBase
         await _dbContext.SaveChangesAsync(context.CancellationToken);
         return new Empty();
     }
-    
+
     private static AccountInfo MapToProto(Models.AccountInfo entity, bool banMask)
     {
         var proto = new AccountInfo
@@ -242,14 +234,12 @@ public class AccountService : Account.AccountService.AccountServiceBase
     {
         var httpContext = _httpContextAccessor.HttpContext;
         var userId = int.Parse(httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                               ?? throw new RpcException(new Status(StatusCode.Unauthenticated, "No user id provided")));
+                               ?? throw new RpcException(new Status(StatusCode.Unauthenticated,
+                                   "No user id provided")));
 
         var role = httpContext?.User?.FindFirst(ClaimTypes.Role)?.Value;
-        if (role is null)
-        {
-            throw new RpcException(new Status(StatusCode.Unauthenticated, "Bad role provided"));
-        }
-        
+        if (role is null) throw new RpcException(new Status(StatusCode.Unauthenticated, "Bad role provided"));
+
         return (userId, role);
     }
 }
