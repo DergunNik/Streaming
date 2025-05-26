@@ -1,6 +1,7 @@
 ﻿using LiveService.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 
 namespace LiveService.Hubs;
 
@@ -16,9 +17,9 @@ public class ChatHub : Hub<IChatClient>
     private const string StreamChatGroupPrefix = "stream-chat-";
     private readonly ContentRestrictions _contentRestrictions;
 
-    public ChatHub(ContentRestrictions contentRestrictions)
+    public ChatHub(IOptions<ContentRestrictions> contentRestrictions)
     {
-        _contentRestrictions = contentRestrictions;
+        _contentRestrictions = contentRestrictions.Value;
     }
 
     public async Task JoinStreamChat(string streamId)

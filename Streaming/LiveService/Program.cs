@@ -6,6 +6,8 @@ using LiveService.Services;
 using LiveService.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,6 +65,13 @@ builder.Services
     .Configure<DbCredentials>(builder.Configuration)
     .Configure<ContentRestrictions>(builder.Configuration)
     .Configure<CloudinaryRestrictions>(builder.Configuration)
+    .AddHttpContextAccessor()
+    .AddDbContext<AppDbContext>((serviceProvider, options) =>
+    {
+        var dbCredentials = serviceProvider.GetRequiredService<IOptions<DbCredentials>>().Value;
+        var connectionString = dbCredentials.ToConnectionString();
+        options.UseNpgsql(connectionString);
+    })
     .AddCloudinaryFromConfig(builder.Configuration)
     .AddScoped<StreamService>()
     .AddScoped<ChatHub>();

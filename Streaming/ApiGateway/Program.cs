@@ -47,9 +47,16 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-builder.Services.Configure<ServiceAddresses>(builder.Configuration);
+builder.Services
+    .Configure<ServiceAddresses>(builder.Configuration)
+    .AddHttpContextAccessor()
+    .AddHttpLogging(logging =>
+{
+    logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.All;
+});
 
 builder.Services.AddControllers();
+
 builder.Services.AddHealthChecks();
 
 builder.Services.AddReverseProxy()

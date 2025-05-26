@@ -5,6 +5,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using MailKit.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 using MimeKit;
 using SmtpClient = MailKit.Net.Smtp.SmtpClient;
 
@@ -12,7 +13,7 @@ namespace EmailService.Service;
 
 [Authorize(Roles = "Admin,InnerService")]
 public class EmailService(
-    EmailCredentials credentials,
+    IOptions<EmailCredentials> credentials,
     ILogger<EmailService> logger) : Email.EmailService.EmailServiceBase
 {
     public override async Task<Empty> SendEmail(EmailRequest request, ServerCallContext context)
@@ -21,10 +22,10 @@ public class EmailService(
         {
             using var smtp = new SmtpClient();
             await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(credentials.Email, credentials.AppPassword);
+            await smtp.AuthenticateAsync(credentials.Value.Email, credentials.Value.AppPassword);
 
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(request.From, credentials.Email));
+            message.From.Add(new MailboxAddress(request.From, credentials.Value.Email));
             message.Subject = request.Subject;
             message.Body = new TextPart("plain") { Text = request.Body };
 

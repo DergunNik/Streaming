@@ -63,6 +63,7 @@ builder.Services
     .Configure<EncryptionSettings>(builder.Configuration)
     .Configure<EmailServiceAddress>(builder.Configuration)
     .Configure<JwtSettings>(builder.Configuration)
+    .AddHttpContextAccessor()
     .AddScoped<IJwtService, JwtService>()
     .AddScoped<AppDbContext>()
     .AddScoped(typeof(IRepository<>), typeof(EfRepository<>))

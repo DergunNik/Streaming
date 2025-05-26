@@ -39,6 +39,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddGrpc();
 builder.Services
     .Configure<EmailCredentials>(builder.Configuration)
+    .AddHttpContextAccessor()
     .AddScoped<EmailService.Service.EmailService>();
 
 

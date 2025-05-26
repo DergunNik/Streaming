@@ -19,7 +19,7 @@ public class JwtService(
     IRepository<User> userRepository,
     IRepository<RefreshToken> refreshTokenRepository,
     IHashService hashService,
-    JwtSettings jwtSettings
+    IOptions<JwtSettings> jwtSettings
 ) : IJwtService
 {
     public async Task<(string jwtToken, string refreshToken)> GenerateTokensAsync(string email, string password)
@@ -48,7 +48,7 @@ public class JwtService(
         var validationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Value.Key)),
             ValidateIssuer = false,
             ValidateAudience = false
         };
@@ -123,8 +123,8 @@ public class JwtService(
             new(ClaimTypes.NameIdentifier, id.ToString()),
             new(ClaimTypes.Role, userRole.ToString())
         };
-        var issuer = jwtSettings.Issuer;
-        var audience = jwtSettings.Audience;
+        var issuer = jwtSettings.Value.Issuer;
+        var audience = jwtSettings.Value.Audience;
         var jwtToken = new JwtSecurityToken(
             expires: DateTime.UtcNow.Add(authSettings.Value.AccessTokenLifetime),
             claims: claims,
@@ -133,7 +133,7 @@ public class JwtService(
             signingCredentials:
             new SigningCredentials(
                 new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(jwtSettings.Key)),
+                    Encoding.UTF8.GetBytes(jwtSettings.Value.Key)),
                 SecurityAlgorithms.HmacSha256));
 
         return new JwtSecurityTokenHandler().WriteToken(jwtToken);

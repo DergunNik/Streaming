@@ -49,6 +49,7 @@ builder.Services.AddGrpc().AddJsonTranscoding();
 builder.Services
     .Configure<CloudinaryRestrictions>(builder.Configuration)
     .Configure<DbCredentials>(builder.Configuration)
+    .AddHttpContextAccessor()
     .AddDbContext<AppDbContext>((serviceProvider, options) =>
     {
         var dbCredentials = serviceProvider.GetRequiredService<IOptions<DbCredentials>>().Value;

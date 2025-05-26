@@ -23,27 +23,27 @@ spec:
             - name: JwtSettings__Key
               valueFrom:
                 secretKeyRef:
-                  name: jwt-secret.yaml
+                  name: jwt-secret
                   key: jwt-key
             - name: JwtSettings__Issuer
               valueFrom:
                 configMapKeyRef:
-                  name: jwt-config.yaml
+                  name: jwt-config
                   key: issuer
             - name: JwtSettings__Audience
               valueFrom:
                 configMapKeyRef:
-                  name: jwt-secret.yaml
+                  name: jwt-config
                   key: audience
             - name: ServiceAddresses__AuthService__Host
               valueFrom:
                 configMapKeyRef:
-                  name: auth-service-config.yaml
+                  name: auth-service-config
                   key: host
             - name: ServiceAddresses__AuthService__Port
               valueFrom:
                 configMapKeyRef:
-                  name: auth-service-config.yaml
+                  name: auth-service-config
                   key: port
           livenessProbe:
             httpGet:

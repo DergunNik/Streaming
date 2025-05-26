@@ -33,17 +33,17 @@ spec:
             - name: JwtSettings__Key
               valueFrom:
                 secretKeyRef:
-                  name: jwt-secret.yaml
+                  name: jwt-secret
                   key: jwt-key
             - name: JwtSettings__Issuer
               valueFrom:
                 configMapKeyRef:
-                  name: jwt-config.yaml
+                  name: jwt-config
                   key: issuer
             - name: JwtSettings__Audience
               valueFrom:
                 configMapKeyRef:
-                  name: jwt-secret.yaml
+                  name: jwt-config
                   key: audience
           livenessProbe:
             httpGet:

@@ -17,16 +17,16 @@ ENV JwtSettings__Audience=""
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["VoDService.csproj", "./"]
-RUN dotnet restore "VoDService.csproj"
+COPY ["AccountService.csproj", "./"]
+RUN dotnet restore "AccountService.csproj"
 COPY . .
 WORKDIR "/src"
-RUN dotnet build "VoDService.csproj" -c Release -o /app/build
+RUN dotnet build "AccountService.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "VoDService.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "AccountService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "VoDService.dll"]
+ENTRYPOINT ["dotnet", "AccountService.dll"]

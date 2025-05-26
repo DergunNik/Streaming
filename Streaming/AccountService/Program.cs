@@ -43,6 +43,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddGrpc().AddJsonTranscoding();
 builder.Services
+    .AddHttpContextAccessor()
     .Configure<CloudinaryRestrictions>(builder.Configuration)
     .Configure<ContentRestrictions>(builder.Configuration)
     .Configure<DbCredentials>(builder.Configuration)
