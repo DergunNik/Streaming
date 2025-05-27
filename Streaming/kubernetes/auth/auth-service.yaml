@@ -14,9 +14,17 @@ spec:
       labels:
         app: auth-svc-lbl
     spec:
+      serviceAccountName: acc-svc-sa
+      initContainers:
+        - name: wait-for-database-migration-job
+          image: groundnuty/k8s-wait-for:v2.0
+          args:
+            - "job"
+            - "auth-db-migrator"
       containers:
         - name: auth-svc
           image: dergunnik/streaming-auth-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:

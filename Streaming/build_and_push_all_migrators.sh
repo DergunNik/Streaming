@@ -35,13 +35,13 @@ echo "Начинаю параллельную сборку и отправку �
 for i in "${!SERVICE_DIRS[@]}"; do
   DIR_NAME="${SERVICE_DIRS[$i]}"
   REPO_NAME="${REPO_NAMES[$i]}"
-  FULL_REPO_NAME="$DOCKER_HUB_USER/$REPO_NAME:$TAG"
+  FULL_REPO_NAME="$DOCKER_HUB_USER/$REPO_NAME-migrator:$TAG"
 
   echo "--- Запускаю сборку и отправку для директории: $DIR_NAME (репозиторий: $FULL_REPO_NAME) ---"
   (
     set -e
     echo "Собираю $DIR_NAME..."
-    docker build --target app -t "$FULL_REPO_NAME" "./$DIR_NAME/"
+    docker build --target migrator -t "$FULL_REPO_NAME" "./$DIR_NAME/"
     echo "Отправляю $REPO_NAME..."
     docker push "$FULL_REPO_NAME"
     echo "--- $DIR_NAME (репозиторий: $REPO_NAME): сборка и отправка завершены ---"

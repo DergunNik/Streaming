@@ -47,8 +47,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddGrpc().AddJsonTranscoding();
 
 builder.Services
-    .Configure<CloudinaryRestrictions>(builder.Configuration)
-    .Configure<DbCredentials>(builder.Configuration)
+    .Configure<CloudinaryRestrictions>(builder.Configuration.GetSection("CloudinaryRestrictions"))
+    .Configure<DbCredentials>(builder.Configuration.GetSection("DbCredentials"))
     .AddHttpContextAccessor()
     .AddDbContext<AppDbContext>((serviceProvider, options) =>
     {
@@ -57,11 +57,11 @@ builder.Services
         options.UseNpgsql(connectionString);
     })
     .AddScoped<VideoService>()
-    .AddCloudinaryFromConfig(builder.Configuration);
+    .AddCloudinaryFromConfig(builder.Configuration, "CloudinarySettings");
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>("db", tags: ["ready"])
-    .AddCloudinaryHealthCheck(tags: ["ready"]);
+    .AddDbContextCheck<AppDbContext>("db", tags: ["ready"]);
+    // .AddCloudinaryHealthCheck(tags: ["ready"]);
 
 var app = builder.Build();
 

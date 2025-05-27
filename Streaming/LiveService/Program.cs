@@ -62,9 +62,9 @@ builder.Services.AddSignalR(options => { options.EnableDetailedErrors = builder.
 
 builder.Services.AddGrpc().AddJsonTranscoding();
 builder.Services
-    .Configure<DbCredentials>(builder.Configuration)
-    .Configure<ContentRestrictions>(builder.Configuration)
-    .Configure<CloudinaryRestrictions>(builder.Configuration)
+    .Configure<DbCredentials>(builder.Configuration.GetSection("DbCredentials"))
+    .Configure<ContentRestrictions>(builder.Configuration.GetSection("ContentRestrictions"))
+    .Configure<CloudinaryRestrictions>(builder.Configuration.GetSection("CloudinaryRestrictions"))
     .AddHttpContextAccessor()
     .AddDbContext<AppDbContext>((serviceProvider, options) =>
     {
@@ -72,13 +72,13 @@ builder.Services
         var connectionString = dbCredentials.ToConnectionString();
         options.UseNpgsql(connectionString);
     })
-    .AddCloudinaryFromConfig(builder.Configuration)
+    .AddCloudinaryFromConfig(builder.Configuration, "CloudinarySettings")
     .AddScoped<StreamService>()
     .AddScoped<ChatHub>();
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>(tags: ["ready"])
-    .AddCloudinaryHealthCheck(tags: ["ready"]);
+    .AddDbContextCheck<AppDbContext>(tags: ["ready"]);
+    // .AddCloudinaryHealthCheck(tags: ["ready"]);
 
 var app = builder.Build();
 

@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-db-migrator
+spec:
+#  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      labels:
+        app: auth-db-migrator
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: auth-db-migrator-container
+          image: dergunnik/streaming-auth-service-migrator:latest
+          env:
+            - name: DbCredentials__User
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-secret
+                  key: pgsql-user
+            - name: DbCredentials__Password
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-secret
+                  key: pgsql-password
+            - name: DbCredentials__Db
+              valueFrom:
+                secretKeyRef:
+                  name: auth-pgsql-secret
+                  key: pgsql-db
+            - name: DbCredentials__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-pgsql-config
+                  key: db-url
+            - name: DbCredentials__Port
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-pgsql-config
+                  key: db-port
+            - name: CloudinarySettings__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: cloudinary-secret
+                  key: api-key
+            - name: CloudinarySettings__ApiSecret
+              valueFrom:
+                secretKeyRef:
+                  name: cloudinary-secret
+                  key: api-secret
+            - name: JwtSettings__Key
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: jwt-key
+            - name: JwtSettings__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: jwt-config
+                  key: issuer
+            - name: JwtSettings__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: jwt-config
+                  key: audience

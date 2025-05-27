@@ -1,32 +1,18 @@
-﻿apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: vod-svc-deployment
-  labels:
-    app: vod-svc-lbl
+  name: vod-db-migrator
 spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: vod-svc-lbl
+  #  ttlSecondsAfterFinished: 120
   template:
     metadata:
       labels:
-        app: vod-svc-lbl
+        app: vod-db-migrator
     spec:
-      serviceAccountName: acc-svc-sa
-      initContainers:
-        - name: wait-for-database-migration-job
-          image: groundnuty/k8s-wait-for:v2.0
-          args:
-            - "job"
-            - "vod-db-migrator"
+      restartPolicy: OnFailure
       containers:
-        - name: vod-svc
-          image: dergunnik/streaming-vod-service:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8080
+        - name: vod-db-migrator-container
+          image: dergunnik/streaming-vod-service-migrator:latest
           env:
             - name: DbCredentials__User
               valueFrom:
@@ -53,11 +39,6 @@ spec:
                 configMapKeyRef:
                   name: vod-pgsql-config
                   key: db-port
-            - name: CloudinarySettings__CloudName
-              valueFrom:
-                secretKeyRef:
-                  name: cloudinary-secret
-                  key: cloud-name
             - name: CloudinarySettings__ApiKey
               valueFrom:
                 secretKeyRef:
@@ -83,31 +64,3 @@ spec:
                 configMapKeyRef:
                   name: jwt-config
                   key: audience
-          livenessProbe:
-            httpGet:
-              path: /health/live
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 10
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 10
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: vod-svc
-spec:
-  selector:
-    app: vod-svc-lbl
-  ports:
-    - name: grpc-and-http
-      protocol: TCP
-      port: 8080
-      targetPort: 8080
-      

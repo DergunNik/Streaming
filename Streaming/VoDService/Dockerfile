@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base_app_runtime
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 5000
@@ -16,18 +16,26 @@ ENV JwtSettings__Key=""
 ENV JwtSettings__Issuer=""
 ENV JwtSettings__Audience=""
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS common_builder
 WORKDIR /src
 COPY ["VoDService.csproj", "./"]
-RUN dotnet restore "VoDService.csproj"
 COPY . .
-WORKDIR "/src"
+RUN dotnet restore "VoDService.csproj"
+RUN dotnet tool restore
+
+FROM common_builder AS app_build_step
+WORKDIR /src
 RUN dotnet build "VoDService.csproj" -c Release -o /app/build
 
-FROM build AS publish
+FROM app_build_step AS app_publish_step
 RUN dotnet publish "VoDService.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM base AS final
+FROM base_app_runtime AS app
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=app_publish_step /app/publish .
 ENTRYPOINT ["dotnet", "VoDService.dll"]
+
+FROM common_builder AS migrator
+WORKDIR /src
+
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "VoDService.csproj"]

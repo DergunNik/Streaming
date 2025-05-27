@@ -8,6 +8,8 @@ using Grpc.Core;
 using Grpc.Net.Client.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,14 +60,19 @@ builder.Services.AddGrpcClient<EmailService.EmailServiceClient>(options =>
     });
 
 builder.Services
-    .Configure<AuthSettings>(builder.Configuration)
-    .Configure<DbCredentials>(builder.Configuration)
-    .Configure<EncryptionSettings>(builder.Configuration)
-    .Configure<EmailServiceAddress>(builder.Configuration)
-    .Configure<JwtSettings>(builder.Configuration)
+    .Configure<AuthSettings>(builder.Configuration.GetSection("AuthSettings"))
+    .Configure<DbCredentials>(builder.Configuration.GetSection("DbCredentials"))
+    .Configure<EncryptionSettings>(builder.Configuration.GetSection("EncryptionSettings"))
+    .Configure<EmailServiceAddress>(builder.Configuration.GetSection("EmailServiceAddress"))
+    .Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"))
     .AddHttpContextAccessor()
     .AddScoped<IJwtService, JwtService>()
-    .AddScoped<AppDbContext>()
+    .AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    var dbCredentials = serviceProvider.GetRequiredService<IOptions<DbCredentials>>().Value;
+    var connectionString = dbCredentials.ToConnectionString();
+    options.UseNpgsql(connectionString);
+})
     .AddScoped(typeof(IRepository<>), typeof(EfRepository<>))
     .AddScoped<AuthService.Services.AuthService>()
     .AddScoped<IHashService, Argon2HashService>();

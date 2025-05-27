@@ -6,10 +6,11 @@ using Microsoft.Extensions.Options;
 namespace AuthService.Data;
 
 public class AppDbContext(
+    DbContextOptions<AppDbContext> options,
     IOptions<DbCredentials> dbCredentials,
     IOptions<EncryptionSettings> encryptionOptions,
     IOptions<AuthSettings> authOptions
-) : DbContext
+) : DbContext(options)
 {
     public DbSet<User> Users { get; set; }
     public DbSet<UserRegRequest> Requests { get; set; }

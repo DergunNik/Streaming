@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: auth-svc-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: auth-svc-sa-jobs-binding
+subjects:
+  - kind: ServiceAccount
+    name: auth-svc-sa
+roleRef:
+  kind: ClusterRole
+  name: job-reader-permission
+  apiGroup: rbac.authorization.k8s.io
+  
