@@ -88,6 +88,36 @@ spec:
                 configMapKeyRef:
                   name: jwt-config
                   key: audience
+#            - name: LiveCredentials__ServiceEmail
+#              valueFrom:
+#                secretKeyRef:
+#                  name: live-auth-secret
+#                  key: email
+#            - name: AuthCredentials__ServicePassword
+#              valueFrom:
+#                secretKeyRef:
+#                  name: live-auth-secret
+#                  key: password
+#            - name: AuthServiceAddress__Host
+#              valueFrom:
+#                configMapKeyRef:
+#                  name: auth-service-config
+#                  key: host
+#            - name: AuthServiceAddress__Port
+#              valueFrom:
+#                configMapKeyRef:
+#                  name: auth-service-config
+#                  key: port 
+            - name: VodServiceAddress__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: vod-service-config
+                  key: host
+            - name: VodServiceAddress__Port
+              valueFrom:
+                configMapKeyRef:
+                  name: vod-service-config
+                  key: port 
           livenessProbe:
             httpGet:
               path: /health/live

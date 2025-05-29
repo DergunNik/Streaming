@@ -21,16 +21,19 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
     private readonly HttpClient _httpClient;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly CloudinarySettings _settings;
-
+    private readonly VoD.VideoService.VideoServiceClient _videoServiceClient;
+    
     public StreamService(
         IOptions<CloudinarySettings> cloudinarySettings,
         AppDbContext dbContext,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        VoD.VideoService.VideoServiceClient videoServiceClient)
     {
         _settings = cloudinarySettings.Value;
         _httpClient = new HttpClient();
         _db = dbContext;
         _httpContextAccessor = httpContextAccessor;
+        _videoServiceClient = videoServiceClient;
 
         var byteArray = Encoding.ASCII.GetBytes($"{_settings.ApiKey}:{_settings.ApiSecret}");
         _httpClient.DefaultRequestHeaders.Authorization
@@ -318,6 +321,75 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
         return new Empty();
     }
 
+    [Authorize]
+    public override async Task<ArchiveStreamReply> ArchiveStream(ArchiveStreamRequest request, ServerCallContext context)
+    {
+        await GetAuthorOrThrowIfBadAsync(request.CloudinaryStreamId);
+        VoD.ArchiveStreamReply vodArchiveResponse;
+        
+        var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "Authorization");
+        var headers = new Metadata();
+        
+        if (authHeader != null)
+        {
+            headers.Add("Authorization", $"Bearer {authHeader.Value}");
+        }
+        
+        try
+        {
+            vodArchiveResponse = await _videoServiceClient.ArchiveStreamAsync(new VoD.ArchiveStreamRequest
+            {
+                PublicStreamId = request.CloudinaryStreamId,
+                Title = request.Title,
+                Description = request.Description,
+                Tags = { request.Tags }
+            }, cancellationToken: context.CancellationToken);
+
+            if (vodArchiveResponse is null) 
+            {
+                throw new RpcException(new Status(StatusCode.Internal, "Archiving process with the VoD service failed or returned no information."));
+            }
+        }
+        catch (RpcException) 
+        {
+            throw; 
+        }
+        catch (Exception ex) 
+        {
+            throw new RpcException(new Status(StatusCode.Internal, $"An unexpected error occurred while communicating with the video archiving service: {ex.Message}"));
+        }
+
+        var cloudinaryDeleteHttpRequest =
+            new HttpRequestMessage(HttpMethod.Delete, $"{BaseUrl}/live_streams/{request.CloudinaryStreamId}");
+        try
+        {
+            var cloudinaryHttpResponse = await _httpClient.SendAsync(cloudinaryDeleteHttpRequest, context.CancellationToken);
+            if (!cloudinaryHttpResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await cloudinaryHttpResponse.Content.ReadAsStringAsync(context.CancellationToken);
+                throw new RpcException(new Status(StatusCode.Internal, $"Failed to delete live stream from Cloudinary. Status: {cloudinaryHttpResponse.StatusCode}. Response: {errorContent}"));
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new RpcException(new Status(StatusCode.Internal, $"Error communicating with Cloudinary to delete live stream: {ex.Message}"));
+        }
+
+        var dbStream = await _db.Streams.FirstOrDefaultAsync(e => e.CloudinaryStreamId == request.CloudinaryStreamId, context.CancellationToken);
+        if (dbStream is not null)
+        {
+            _db.Streams.Remove(dbStream);
+            await _db.SaveChangesAsync(context.CancellationToken);
+        }
+
+        var reply = new ArchiveStreamReply
+        {
+            CloudinaryPublicId = vodArchiveResponse.PublicId
+        };
+
+        return reply;
+    }
+
     public override async Task<GetStreamInfoReply> GetStreamInfo(GetStreamInfoRequest request,
         ServerCallContext context)
     {
@@ -440,9 +512,9 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
         if (info is null) throw new RpcException(new Status(StatusCode.NotFound, "Stream not found"));
 
         var httpContext = _httpContextAccessor.HttpContext;
-        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+        var userId = int.Parse(httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
                                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated")));
-        var role = httpContext?.User?.FindFirst(ClaimTypes.Role)?.Value ??
+        var role = httpContext.User.FindFirst(ClaimTypes.Role)?.Value ??
                    throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated"));
 
         if (role is "Admin" or "InnerService") return info.AuthorId;
@@ -503,7 +575,7 @@ public class StreamService : Streaming.StreamService.StreamServiceBase
     private int GetUserId()
     {
         var httpContext = _httpContextAccessor.HttpContext;
-        var userId = int.Parse(httpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+        var userId = int.Parse(httpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
                                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthenticated")));
         return userId;
     }

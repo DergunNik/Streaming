@@ -77,6 +77,61 @@ public class VideoService : VoD.VideoService.VideoServiceBase
         };
     }
 
+    [Authorize]
+    public override async Task<ArchiveStreamReply> ArchiveStream(ArchiveStreamRequest request, ServerCallContext context)
+    {
+        var userId = GetUserId();
+    
+        var existingResource = await _cloudinary.GetResourceAsync(new GetResourceParams(request.PublicStreamId)
+        {
+            ResourceType = ResourceType.Video
+        });
+
+        if (existingResource.Metadata["author"] != userId.ToString())
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "User cant archive stream of other person"));
+        }
+        
+        if (existingResource is null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, "Stream not found"));
+        }
+
+        var updateParams = new UpdateParams(request.PublicStreamId)
+        {
+            ResourceType = ResourceType.Video,
+            Tags = string.Join(",", request.Tags),
+            Context = new StringDictionary
+            {
+                { "title", request.Title },
+                { "description", request.Description }
+            },
+            Metadata = new StringDictionary
+            {
+                { "author", userId.ToString() }
+            }
+        };
+
+        var updateResult = await _cloudinary.UpdateResourceAsync(updateParams);
+        
+        var video = new Models.VideoInfo
+        {
+            PublicId = request.PublicStreamId,
+            LikeCount = 0,
+            DislikeCount = 0
+        };
+        await _dbContext.Videos.AddAsync(video, context.CancellationToken);
+
+        await _dbContext.SaveChangesAsync(context.CancellationToken);
+
+        return new ArchiveStreamReply
+        {
+            PublicId = request.PublicStreamId,
+            SecureUrl = updateResult.SecureUrl,
+            UploadedAt = Timestamp.FromDateTime(DateTime.UtcNow)
+        };
+    }
+
     public override Task<GetManifestReply> GetVideoManifest(GetManifestRequest request, ServerCallContext context)
     {
         var ext = request.Type == GetManifestRequest.Types.ManifestType.Hls ? "m3u8" : "mpd";

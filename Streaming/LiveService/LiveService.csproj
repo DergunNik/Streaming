@@ -9,10 +9,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Protobuf Include="Protos\live.proto" GrpcServices="Server"/>
+        <Protobuf Include="Protos\live.proto" GrpcServices="Service"/>
+        <Protobuf Include="Protos\vod.proto">
+          <GrpcServices>Client</GrpcServices>
+          <Access>Public</Access>
+          <ProtoCompile>True</ProtoCompile>
+          <CompileOutputs>True</CompileOutputs>
+          <OutputDir>obj\Debug\net8.0\</OutputDir>
+          <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="AuthUtils" Version="1.0.1" />
         <PackageReference Include="CloudinaryDotNet" Version="1.27.5"/>
         <PackageReference Include="CloudinaryUtils" Version="1.0.0"/>
         <PackageReference Include="Grpc.AspNetCore" Version="2.57.0"/>

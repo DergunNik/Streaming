@@ -1,5 +1,9 @@
 using System.Text;
+using AuthUtils.DependencyInjection;
+using AuthUtils.Services;
 using CloudinaryUtils.DependencyInjection;
+using Grpc.Core;
+using Grpc.Net.Client.Configuration;
 using LiveService.Data;
 using LiveService.Hubs;
 using LiveService.Services;
@@ -60,7 +64,19 @@ var redisConnectionString = builder.Configuration.GetConnectionString("RedisSign
 builder.Services.AddSignalR(options => { options.EnableDetailedErrors = builder.Environment.IsDevelopment(); })
     .AddStackExchangeRedis(redisConnectionString, options => { options.Configuration.ChannelPrefix = "LiveService"; });
 
+var vodConfig = builder.Configuration.GetSection("VodServiceAddress").Get<VodServiceAddress>();
+
 builder.Services.AddGrpc().AddJsonTranscoding();
+builder.Services.AddGrpcClient<VoD.VideoService.VideoServiceClient>(options =>
+    {
+        options.Address = new Uri(vodConfig.Url);
+    })
+    .ConfigureChannel(o =>
+    {
+        o.ServiceConfig = new ServiceConfig { LoadBalancingConfigs = { new RoundRobinConfig() } };
+        o.Credentials = ChannelCredentials.Insecure;
+    });
+
 builder.Services
     .Configure<DbCredentials>(builder.Configuration.GetSection("DbCredentials"))
     .Configure<ContentRestrictions>(builder.Configuration.GetSection("ContentRestrictions"))
@@ -77,8 +93,12 @@ builder.Services
     .AddScoped<ChatHub>();
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<AppDbContext>(tags: ["ready"]);
-    // .AddCloudinaryHealthCheck(tags: ["ready"]);
+    .AddDbContextCheck<AppDbContext>(tags: ["ready"])
+    .AddUrlGroup(
+        uri: new Uri(new Uri(vodConfig.Url), "/health/live"),
+        name: "vodService",
+        tags: ["archive"]);
+// .AddCloudinaryHealthCheck(tags: ["ready"]);
 
 var app = builder.Build();
 

@@ -16,6 +16,12 @@ ENV ConnectionStrings__RedisSignalRBackplane=""
 ENV CloudinarySettings__CloudName=""
 ENV CloudinarySettings__ApiKey=""
 ENV CloudinarySettings__ApiSecret=""
+#ENV AuthServiceAddress__Host=""
+#ENV AuthServiceAddress__Port=""
+ENV VodServiceAddress__Host=""
+ENV VodServiceAddress__Port=""
+#ENV AuthCredentials__ServiceEmail=""
+#ENV AuthCredentials__ServicePassword=""
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS common_builder
 WORKDIR /src

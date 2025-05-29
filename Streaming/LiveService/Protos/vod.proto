@@ -11,7 +11,7 @@ import "google/api/annotations.proto";
 service VideoService {
   rpc UploadVideo(UploadVideoRequest) returns (UploadVideoReply) {
     option (google.api.http) = {
-      post: "/videos/upload"
+      post: "/videos:upload"
       body: "*"
     };
   }
@@ -41,7 +41,7 @@ service VideoService {
   }
   rpc SetReaction(SetReactionRequest) returns (SetReactionReply) {
     option (google.api.http) = {
-      post: "/videos/{public_id}/like"
+      post: "/videos/{public_id}:setReaction"
       body: "*"
     };
   }
