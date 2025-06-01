@@ -7,6 +7,8 @@ using Moq;
 using VoD;
 using VoDService.Data;
 using VoDService.Settings;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using VideoInfo = VoDService.Models.VideoInfo;
 using VideoService = VoDService.Services.VideoService;
 
@@ -17,6 +19,8 @@ public class VideoServiceTests
     private readonly Cloudinary _cloudinary;
     private readonly AppDbContext _dbContext;
     private readonly Mock<ServerCallContext> _mockServerCallContext = new();
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor = new();
+    private readonly DefaultHttpContext _httpContext = new();
     private readonly VideoService _videoService;
 
     public VideoServiceTests()
@@ -43,51 +47,68 @@ public class VideoServiceTests
         var account = new Account("diw0s5viu", "747123821559715", "VTzfVgxcX3_XEJJezm-FVQrDJuA");
         _cloudinary = new Cloudinary(account);
 
-        _videoService = new VideoService(_cloudinary, _dbContext);
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(_httpContext);
+        _videoService = new VideoService(_cloudinary, _dbContext, _mockHttpContextAccessor.Object);
+    }
+
+    private void SetupUserContext(int userId, string role = "DefaultUser")
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims);
+        var principal = new ClaimsPrincipal(identity);
+        _httpContext.User = principal;
     }
 
     [Fact]
     public async Task UploadVideo_ShouldThrow_WhenNoSourceProvided()
     {
+        const int userId = 1;
+        SetupUserContext(userId);
+
         var request = new UploadVideoRequest
         {
             Title = "No Source Video",
             Description = "Missing data and URI"
         };
-        var context = new TestServerCallContext(CancellationToken.None);
 
         var ex = await Assert.ThrowsAsync<RpcException>(
-            () => _videoService.UploadVideo(request, context));
+            () => _videoService.UploadVideo(request, _mockServerCallContext.Object));
         Assert.Equal(StatusCode.InvalidArgument, ex.StatusCode);
     }
 
     [Fact]
     public async Task UploadVideo_ShouldThrow_WhenWrongUriProvided()
     {
+        const int userId = 123;
+        SetupUserContext(userId);
+
         var request = new UploadVideoRequest
         {
             Uri = "http://example.com/sample.mp4",
             Title = "Test Video Title",
             Description = "Test Video Description",
-            AuthorId = 123,
             Tags = { "tag1", "tag2" }
         };
-        var context = new TestServerCallContext(CancellationToken.None);
 
-        await Assert.ThrowsAsync<RpcException>(async () => await _videoService.UploadVideo(request, context));
+        await Assert.ThrowsAsync<RpcException>(async () => await _videoService.UploadVideo(request, _mockServerCallContext.Object));
     }
 
     [Fact]
     public async Task GetVideoManifest_ShouldReturnHlsUrl_WhenTypeIsHls()
     {
-        var context = new TestServerCallContext(CancellationToken.None);
+        SetupUserContext(1);
+
         var request = new GetManifestRequest
         {
             PublicId = "test_public_id",
             Type = GetManifestRequest.Types.ManifestType.Hls
         };
 
-        var reply = await _videoService.GetVideoManifest(request, context);
+        var reply = await _videoService.GetVideoManifest(request, _mockServerCallContext.Object);
 
         Assert.Contains(".m3u8", reply.ManifestUrl);
     }
@@ -95,7 +116,8 @@ public class VideoServiceTests
     [Fact]
     public async Task GetVideoUrl_ShouldReturnTransformedUrl_WhenTransformationIsProvided()
     {
-        var context = new TestServerCallContext(CancellationToken.None);
+        SetupUserContext(1);
+
         var request = new GetUrlRequest
         {
             PublicId = "test_public_id",
@@ -103,7 +125,7 @@ public class VideoServiceTests
             Transformation = "w_400,h_300,c_fill"
         };
 
-        var reply = await _videoService.GetVideoUrl(request, context);
+        var reply = await _videoService.GetVideoUrl(request, _mockServerCallContext.Object);
 
         Assert.NotNull(reply.Url);
         Assert.Contains("test_public_id.mp4", reply.Url);
@@ -112,7 +134,8 @@ public class VideoServiceTests
     [Fact]
     public async Task GetVideosOfUser_ShouldReturnListOfUsersVideos()
     {
-        var context = new TestServerCallContext(CancellationToken.None);
+        const int userId = 555;
+        SetupUserContext(userId);
 
         var video1 = new VideoInfo { PublicId = "v1", LikeCount = 2, DislikeCount = 1 };
         var video2 = new VideoInfo { PublicId = "v2", LikeCount = 1, DislikeCount = 0 };
@@ -121,11 +144,11 @@ public class VideoServiceTests
 
         var request = new GetVideosOfUserRequest
         {
-            UserId = 555,
+            UserId = userId,
             PageSize = 2
         };
 
-        var reply = await _videoService.GetVideosOfUser(request, context);
+        var reply = await _videoService.GetVideosOfUser(request, _mockServerCallContext.Object);
 
         Assert.NotNull(reply);
     }
@@ -133,7 +156,7 @@ public class VideoServiceTests
     [Fact]
     public async Task ListVideos_ShouldReturnProperlyOrderedVideos()
     {
-        var context = new TestServerCallContext(CancellationToken.None);
+        SetupUserContext(1);
 
         var videoOne = new VideoInfo { PublicId = "vid_one", LikeCount = 0, DislikeCount = 0 };
         var videoTwo = new VideoInfo { PublicId = "vid_two", LikeCount = 0, DislikeCount = 0 };
@@ -145,7 +168,7 @@ public class VideoServiceTests
             PageSize = 2
         };
 
-        var reply = await _videoService.ListVideos(request, context);
+        var reply = await _videoService.ListVideos(request, _mockServerCallContext.Object);
 
         Assert.NotNull(reply);
     }

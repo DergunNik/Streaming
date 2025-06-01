@@ -6,6 +6,8 @@ using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Moq;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using AccountInfo = AccountService.Models.AccountInfo;
 
 namespace AccountService.UnitTests;
@@ -16,6 +18,8 @@ public class AccountServiceTests
     private readonly Cloudinary _cloudinary;
     private readonly AppDbContext _dbContext;
     private readonly Mock<ServerCallContext> _mockServerCallContext = new();
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor = new();
+    private readonly DefaultHttpContext _httpContext = new();
 
     public AccountServiceTests()
     {
@@ -48,17 +52,34 @@ public class AccountServiceTests
         _dbContext = new AppDbContext(options, cloudinaryRestrictions, contentRestrictions, dbCredentials);
         var cloudAccount = new CloudinaryDotNet.Account("your-cloud", "your-api-key", "your-api-secret");
         _cloudinary = new Cloudinary(cloudAccount);
-        _accountService = new Services.AccountService(_dbContext, _cloudinary, contentRestrictions);
+        
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(_httpContext);
+        _accountService = new Services.AccountService(_dbContext, _cloudinary, contentRestrictions, _mockHttpContextAccessor.Object);
+    }
+
+    private void SetupUserContext(int userId, string role = "DefaultUser")
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims);
+        var principal = new ClaimsPrincipal(identity);
+        _httpContext.User = principal;
     }
 
     [Fact]
     public async Task CreateAccount_ShouldSucceed_WhenUserDoesNotExist()
     {
+        // Setup user context
+        const int userId = 1;
+        SetupUserContext(userId);
+
         var request = new CreateAccountRequest
         {
             Info = new SetAccountInfo
             {
-                UserId = 1,
                 Description = "Test description"
             }
         };
@@ -66,7 +87,7 @@ public class AccountServiceTests
         var response = await _accountService.CreateAccount(request, _mockServerCallContext.Object);
 
         Assert.NotNull(response.Info);
-        Assert.Equal(1, response.Info.UserId);
+        Assert.Equal(userId, response.Info.UserId);
         Assert.False(response.Info.IsBanned);
         Assert.Equal("Test description", response.Info.Description);
     }
@@ -74,9 +95,12 @@ public class AccountServiceTests
     [Fact]
     public async Task CreateAccount_ShouldThrowAlreadyExists_WhenUserExists()
     {
+        const int userId = 10;
+        SetupUserContext(userId);
+
         await _dbContext.Accounts.AddAsync(new AccountInfo
         {
-            UserId = 10,
+            UserId = userId,
             Description = "Existing user"
         });
         await _dbContext.SaveChangesAsync();
@@ -85,7 +109,6 @@ public class AccountServiceTests
         {
             Info = new SetAccountInfo
             {
-                UserId = 10,
                 Description = "New user data"
             }
         };
@@ -100,6 +123,8 @@ public class AccountServiceTests
     public async Task GetAccount_ShouldReturnAccount_WhenUserExists()
     {
         const int userId = 100;
+        SetupUserContext(userId);
+
         await _dbContext.Accounts.AddAsync(new AccountInfo
         {
             UserId = userId,
@@ -119,6 +144,7 @@ public class AccountServiceTests
     [Fact]
     public async Task GetAccount_ShouldThrowNotFound_WhenUserDoesNotExist()
     {
+        SetupUserContext(1);
         var request = new GetAccountRequest { UserId = 999 };
 
         var ex = await Assert.ThrowsAsync<RpcException>(() =>
@@ -127,9 +153,12 @@ public class AccountServiceTests
     }
 
     [Fact]
-    public async Task SetBanStatus_ShouldBanUser_WhenCalled()
+    public async Task SetBanStatus_ShouldBanUser_WhenCalledByAdmin()
     {
-        var userId = 200;
+        const int userId = 200;
+        const int adminId = 999;
+        SetupUserContext(adminId, "Admin");
+
         await _dbContext.Accounts.AddAsync(new AccountInfo
         {
             UserId = userId,
@@ -152,7 +181,9 @@ public class AccountServiceTests
     [Fact]
     public async Task UpdateAccount_ShouldMaintainBanStatus_WhenAlreadyBanned()
     {
-        var userId = 300;
+        const int userId = 300;
+        SetupUserContext(userId);
+
         await _dbContext.Accounts.AddAsync(new AccountInfo
         {
             UserId = userId,
@@ -165,7 +196,6 @@ public class AccountServiceTests
         {
             Info = new SetAccountInfo
             {
-                UserId = userId,
                 Description = "Updated data"
             }
         };
@@ -181,7 +211,9 @@ public class AccountServiceTests
     [Fact]
     public async Task UpdateAccount_ShouldUpdateFields_WhenUserIsNotBanned()
     {
-        var userId = 400;
+        const int userId = 400;
+        SetupUserContext(userId);
+
         await _dbContext.Accounts.AddAsync(new AccountInfo
         {
             UserId = userId,
@@ -194,7 +226,6 @@ public class AccountServiceTests
         {
             Info = new SetAccountInfo
             {
-                UserId = userId,
                 Description = "New description"
             }
         };

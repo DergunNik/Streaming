@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using Google.Protobuf.WellKnownTypes;
 
 namespace AuthTests;
 
@@ -24,6 +27,8 @@ public class AuthServiceTests
     private readonly Mock<IRepository<RefreshToken>> _refreshTokensRepositoryMock = new();
     private readonly Mock<IRepository<UserRegRequest>> _requestsRepositoryMock = new();
     private readonly Mock<IRepository<User>> _usersRepositoryMock = new();
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor = new();
+    private readonly DefaultHttpContext _httpContext = new();
 
     public AuthServiceTests()
     {
@@ -43,15 +48,25 @@ public class AuthServiceTests
             BdHashSize = 256,
             RefreshTokenSize = 32
         });
+
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(_httpContext);
     }
 
-    [Fact]
-    public async Task Login_ValidRequest_ShouldReturnToken()
+    private void SetupUserContext(int userId, string role = "DefaultUser")
     {
-        var request = new LoginRequest { Email = "test@example.com", Password = "testPass" };
-        _jwtServiceMock.Setup(js => js.GenerateTokensAsync(request.Email, request.Password))
-            .ReturnsAsync(("jwtToken", "refreshToken"));
-        var service = new AuthService.Services.AuthService(
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+            new Claim(ClaimTypes.Role, role)
+        };
+        var identity = new ClaimsIdentity(claims);
+        var principal = new ClaimsPrincipal(identity);
+        _httpContext.User = principal;
+    }
+
+    private AuthService.Services.AuthService CreateService()
+    {
+        return new AuthService.Services.AuthService(
             _loggerMock.Object,
             _hashServiceMock.Object,
             _usersRepositoryMock.Object,
@@ -60,8 +75,18 @@ public class AuthServiceTests
             _jwtServiceMock.Object,
             _authSettingsMock.Object,
             _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
+            _emailServiceClientMock.Object,
+            _mockHttpContextAccessor.Object
         );
+    }
+
+    [Fact]
+    public async Task Login_ValidRequest_ShouldReturnToken()
+    {
+        var request = new LoginRequest { Email = "test@example.com", Password = "testPass" };
+        _jwtServiceMock.Setup(js => js.GenerateTokensAsync(request.Email, request.Password))
+            .ReturnsAsync(("jwtToken", "refreshToken"));
+        var service = CreateService();
 
         var result = await service.Login(request, default);
 
@@ -75,17 +100,7 @@ public class AuthServiceTests
         var request = new LoginRequest { Email = "test@example.com", Password = "wrongPass" };
         _jwtServiceMock.Setup(js => js.GenerateTokensAsync(request.Email, request.Password))
             .ThrowsAsync(new ArgumentException("Wrong email or password."));
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
+        var service = CreateService();
 
         await Assert.ThrowsAsync<RpcException>(() => service.Login(request, default));
     }
@@ -94,17 +109,7 @@ public class AuthServiceTests
     public async Task BeginRegistration_InvalidEmail_ShouldThrowRpcException()
     {
         var request = new RegisterRequest { Email = "invalidEmail", Password = "pass123" };
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
+        var service = CreateService();
 
         await Assert.ThrowsAsync<RpcException>(() => service.BeginRegistration(request, default));
     }
@@ -113,17 +118,7 @@ public class AuthServiceTests
     public async Task BeginRegistration_TooShortPassword_ShouldThrowRpcException()
     {
         var request = new RegisterRequest { Email = "test@mail.com", Password = "1234" };
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
+        var service = CreateService();
 
         await Assert.ThrowsAsync<RpcException>(() => service.BeginRegistration(request, default));
     }
@@ -132,17 +127,7 @@ public class AuthServiceTests
     public async Task FinishRegistration_MissingCode_ShouldThrowRpcException()
     {
         var request = new FinishRequest { Email = "test@mail.com", Code = "" };
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
+        var service = CreateService();
 
         await Assert.ThrowsAsync<RpcException>(() => service.FinishRegistration(request, default));
     }
@@ -153,17 +138,7 @@ public class AuthServiceTests
         _jwtServiceMock.Setup(js => js.RefreshTokenAsync("oldJwt", "oldRefresh"))
             .ReturnsAsync(("newJwt", "newRefresh"));
         var request = new RefreshRequest { JwtToken = "oldJwt", RefreshToken = "oldRefresh" };
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
+        var service = CreateService();
 
         var result = await service.Refresh(request, default);
 
@@ -177,17 +152,7 @@ public class AuthServiceTests
         _jwtServiceMock.Setup(js => js.RefreshTokenAsync("jwt", "expiredRefresh"))
             .ThrowsAsync(new SecurityTokenException("Invalid or expired refresh token."));
         var request = new RefreshRequest { JwtToken = "jwt", RefreshToken = "expiredRefresh" };
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
+        var service = CreateService();
 
         await Assert.ThrowsAsync<RpcException>(() => service.Refresh(request, default));
     }
@@ -195,20 +160,9 @@ public class AuthServiceTests
     [Fact]
     public async Task Logout_InvalidEmail_ShouldThrowRpcException()
     {
-        var service = new AuthService.Services.AuthService(
-            _loggerMock.Object,
-            _hashServiceMock.Object,
-            _usersRepositoryMock.Object,
-            _requestsRepositoryMock.Object,
-            _refreshTokensRepositoryMock.Object,
-            _jwtServiceMock.Object,
-            _authSettingsMock.Object,
-            _encryptionSettingsMock.Object,
-            _emailServiceClientMock.Object
-        );
-
-        var logoutRequest = new LogoutRequest { Email = "" };
-
-        await Assert.ThrowsAsync<RpcException>(() => service.Logout(logoutRequest, default));
+        // SetupUserContext(1);
+        var service = CreateService();
+        
+        await Assert.ThrowsAsync<RpcException>(() => service.Logout(new Empty(), default));
     }
 }

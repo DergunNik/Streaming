@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 
-namespace AuthService.Tests.Service.HelpersImplementations;
+namespace AuthTests;
 
 public class JwtServiceTests
 {
@@ -66,7 +66,7 @@ public class JwtServiceTests
             _userRepoMock.Object,
             _refreshTokenRepoMock.Object,
             _hashServiceMock.Object,
-            _jwtSettings
+            Options.Create(_jwtSettings)
         );
     }
 
@@ -110,7 +110,7 @@ public class JwtServiceTests
     {
         var user = new User
         {
-            Id = 1, Email = "test@example.com", PasswordHash = "hash", BanStatus = BanStatus.CannotLogin,
+            Id = 1, Email = "test@example.com", PasswordHash = "hash", IsBanned = true,
             UserRole = UserRole.DefaultUser
         };
         _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
@@ -127,7 +127,7 @@ public class JwtServiceTests
     {
         var user = new User
         {
-            Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt", BanStatus = BanStatus.MessagesBanned,
+            Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt", IsBanned = false,
             UserRole = UserRole.DefaultUser
         };
         _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
@@ -146,7 +146,7 @@ public class JwtServiceTests
         var user = new User
         {
             Id = 1, Email = "test@example.com", PasswordHash = "correcthash-salt",
-            BanStatus = BanStatus.LiveStreamsBanned, UserRole = UserRole.DefaultUser
+            IsBanned = false, UserRole = UserRole.DefaultUser
         };
         _userRepoMock.Setup(r => r.FirstOrDefaultAsync(It.IsAny<Expression<Func<User, bool>>>(), default))
             .ReturnsAsync(user);
@@ -217,7 +217,7 @@ public class JwtServiceTests
         var user = new User
         {
             Id = 1, Email = "test@example.com", PasswordHash = "pwd", UserRole = UserRole.DefaultUser,
-            BanStatus = BanStatus.LiveStreamsBanned
+            IsBanned = false
         };
         _userRepoMock.Setup(r => r.GetByIdAsync(user.Id, default, null)).ReturnsAsync(user);
         _refreshTokenRepoMock
@@ -238,7 +238,7 @@ public class JwtServiceTests
         var user = new User
         {
             Id = 1, Email = "test@example.com", PasswordHash = "pwd", UserRole = UserRole.DefaultUser,
-            BanStatus = BanStatus.OnDemandPublicationBanned
+            IsBanned =false
         };
         var expiredDbRefreshToken = new RefreshToken
         {
