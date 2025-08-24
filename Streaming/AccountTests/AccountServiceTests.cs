@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Security.Claims;
+using CloudinaryDotNet.Actions;
+using Google.Protobuf;
 using Microsoft.AspNetCore.Http;
 using AccountInfo = AccountService.Models.AccountInfo;
 
@@ -50,7 +52,7 @@ public class AccountServiceTests
         });
 
         _dbContext = new AppDbContext(options, cloudinaryRestrictions, contentRestrictions, dbCredentials);
-        var cloudAccount = new CloudinaryDotNet.Account("your-cloud", "your-api-key", "your-api-secret");
+        var cloudAccount = new CloudinaryDotNet.Account("1", "2", "3");
         _cloudinary = new Cloudinary(cloudAccount);
         
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(_httpContext);
@@ -72,7 +74,6 @@ public class AccountServiceTests
     [Fact]
     public async Task CreateAccount_ShouldSucceed_WhenUserDoesNotExist()
     {
-        // Setup user context
         const int userId = 1;
         SetupUserContext(userId);
 
@@ -234,5 +235,25 @@ public class AccountServiceTests
 
         Assert.NotNull(reply.Info);
         Assert.Equal("New description", reply.Info.Description);
+    }
+
+    [Fact]
+    public async Task UploadImage_ShouldUploadImage_WhenUserIsNotBanned()
+    {
+        // await _cloudinary.UploadAsync(new ImageUploadParams());
+        const int userId = 1;
+        SetupUserContext(userId);
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "image.jpg");
+        var image = ByteString.CopyFrom(await File.ReadAllBytesAsync(path));
+        var reply = await _accountService.CreateAccount(new CreateAccountRequest()
+        {
+            Info = new SetAccountInfo()
+            {
+                Description = "New user data",
+                AvatarImage = image
+            }
+        }, _mockServerCallContext.Object);
+        
+        Assert.Equal(userId, reply.Info.UserId);
     }
 }

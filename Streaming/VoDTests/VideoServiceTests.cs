@@ -44,7 +44,7 @@ public class VideoServiceTests
 
         _dbContext = new AppDbContext(dbOptions, cloudinaryRestrictions, dbCredentials);
 
-        var account = new Account("diw0s5viu", "747123821559715", "VTzfVgxcX3_XEJJezm-FVQrDJuA");
+        var account = new Account("1", "2", "3");
         _cloudinary = new Cloudinary(account);
 
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(_httpContext);
